@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.8</title>
+ <title>NES 游戏模拟器 v3.9</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -25,7 +25,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.8</h1>
+ <h1>🎮 NES 游戏模拟器 v3.9</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -52,7 +52,6 @@
  var canvas = null;
  var ctx = null;
  var logLines = [];
- var frameCount = 0;
 
  function log(msg) { 
   var time = new Date().toLocaleTimeString();
@@ -73,11 +72,12 @@
   ctx = canvas.getContext('2d');
  }
 
+ var frameCount = 0;
  function gameLoop() {
   if (nes) {
    nes.frame();
    frameCount++;
-   if (frameCount % 60 === 0) log('运行中 frame=' + frameCount);
+   if (frameCount % 60 === 0) log('frame=' + frameCount);
   }
   requestAnimationFrame(gameLoop);
  }
@@ -85,7 +85,6 @@
  function loadROM(romData) {
   try {
    log('加载ROM: ' + romData.length + ' bytes');
-   
    initCanvas();
    
    nes = new jsnes.NES({
@@ -105,20 +104,17 @@
    });
 
    nes.loadROM(romData);
-   
-   log('加载成功! frameCount=' + frameCount);
-   log('controllers: ' + JSON.stringify(nes.controllers));
+   log('加载成功!');
+   log('ctrl[1] keys: ' + Object.keys(nes.controllers[1]));
    
    gameLoop();
-   
-   log('游戏开始！按G测试');
-   document.getElementById('gameTitle').textContent = '游戏中';
+   log('游戏开始！按G');
   } catch (err) { 
    log('错误: ' + err.message); 
   }
  }
 
- // 用 buttonDown/buttonUp 方法
+ // 直接设置 controller[1] 的 state
  var keyMap = {
   'g': 'A', 'h': 'B', '2': 'SELECT', '1': 'START',
   'w': 'UP', 's': 'DOWN', 'a': 'LEFT', 'd': 'RIGHT'
@@ -128,9 +124,15 @@
   if (!nes) return;
   var btn = keyMap[e.key.toLowerCase()];
   if (btn) {
-   nes.buttonDown(1, btn);
+   // 尝试直接修改 state
+   if (nes.controllers[1].state) {
+    nes.controllers[1].state[jsnes.Controller['BUTTON_' + btn]] = true;
+    log('按下' + btn + ' -> state=' + nes.controllers[1].state);
+   } else {
+    nes.buttonDown(1, btn);
+    log('按下' + btn);
+   }
    e.preventDefault();
-   log('按下: ' + btn);
   }
  });
 
@@ -138,7 +140,11 @@
   if (!nes) return;
   var btn = keyMap[e.key.toLowerCase()];
   if (btn) {
-   nes.buttonUp(1, btn);
+   if (nes.controllers[1].state) {
+    nes.controllers[1].state[jsnes.Controller['BUTTON_' + btn]] = false;
+   } else {
+    nes.buttonUp(1, btn);
+   }
   }
  });
 
