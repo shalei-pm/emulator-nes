@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.4</title>
+ <title>NES 游戏模拟器 v3.5</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -11,7 +11,6 @@
  .game-container { max-width: 600px; margin: 0 auto; }
  .game-selector { text-align: center; margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
  #game-container { background: #000; border: 4px solid #4ecdc4; border-radius: 8px; width: 512px; height: 480px; margin: 0 auto; position: relative; }
- #game-container canvas { width: 100%; height: 100%; }
  .btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 20px; margin: 5px; font-size: 14px; cursor: pointer; border-radius: 8px; }
  .btn:hover { transform: scale(1.05); }
  .file-input { display: none; }
@@ -26,7 +25,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.4</h1>
+ <h1>🎮 NES 游戏模拟器 v3.5</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -50,11 +49,25 @@
 
  <script>
  var nes = null;
+ var canvas = null;
+ var ctx = null;
  var animationId = null;
 
  function log(msg) { 
   document.getElementById('log').innerHTML = msg; 
   console.log('[NES]', msg); 
+ }
+
+ // 创建canvas
+ function initCanvas() {
+  canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 240;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  document.getElementById('game-container').innerHTML = '';
+  document.getElementById('game-container').appendChild(canvas);
+  ctx = canvas.getContext('2d');
  }
 
  function gameLoop() {
@@ -67,17 +80,13 @@
  function loadROM(romData) {
   try {
    log('加载ROM: ' + romData.length + ' bytes');
+   console.log('ROM前16字节:', romData.charCodeAt(0), romData.charCodeAt(1), romData.charCodeAt(2), romData.charCodeAt(3));
+   
+   initCanvas();
    
    nes = new jsnes.NES({
     onFrame: function(buffer) {
-     var canvas = document.createElement('canvas');
-     canvas.width = 256;
-     canvas.height = 240;
-     var container = document.getElementById('game-container');
-     container.innerHTML = '';
-     container.appendChild(canvas);
-     
-     var ctx = canvas.getContext('2d');
+     if (!ctx) return;
      var imageData = ctx.createImageData(256, 240);
      for (var i = 0; i < buffer.length; i++) {
       var pixel = buffer[i];
@@ -93,46 +102,36 @@
 
    nes.loadROM(romData);
    
-   console.log('ROM loaded, isRunning:', nes.isRunning);
+   console.log('nes对象 keys:', Object.keys(nes));
+   console.log('nes.isRunning:', nes.isRunning);
+   console.log('nes.controller:', nes.controller);
    
-   // 启动循环
-   nes.start();
+   // 直接开始循环，不调用start()
    gameLoop();
    
    log('游戏开始！按G测试');
-   document.getElementById('gameTitle').textContent = '游戏中 - 请按键';
+   document.getElementById('gameTitle').textContent = '游戏中';
   } catch (err) { 
    log('错误: ' + err.message); 
    console.error(err); 
   }
  }
 
- // 键盘控制 - 按钮索引
- var buttonMap = {
-  'g': 0, // A
-  'h': 1, // B
-  '2': 2, // Select
-  '1': 3, // Start
-  'w': 4, // Up
-  's': 5, // Down
-  'a': 6, // Left
-  'd': 7  // Right
- };
+ // 键盘
+ var buttonMap = { 'g': 0, 'h': 1, '2': 2, '1': 3, 'w': 4, 's': 5, 'a': 6, 'd': 7 };
 
  document.addEventListener('keydown', function(e) {
-  if (!nes || !nes.isRunning) return;
-  
+  if (!nes) return;
   var idx = buttonMap[e.key.toLowerCase()];
   if (idx !== undefined) {
    nes.controller[1].buttonState[idx] = true;
    e.preventDefault();
-   console.log('按下:', e.key, 'idx=', idx);
+   console.log('按下:', e.key);
   }
  });
 
  document.addEventListener('keyup', function(e) {
-  if (!nes || !nes.isRunning) return;
-  
+  if (!nes) return;
   var idx = buttonMap[e.key.toLowerCase()];
   if (idx !== undefined) {
    nes.controller[1].buttonState[idx] = false;
@@ -148,7 +147,7 @@
   reader.readAsBinaryString(file);
  });
 
- log('jsNES v1 - 上传ROM开始游戏');
+ log('jsNES v1 - 上传ROM开始');
  </script>
 </body>
 </html>
