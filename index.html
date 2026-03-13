@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页版NES模拟器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #4ade80;
+            font-size: 24px;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button, select, input[type="file"] {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #3b3b5c;
+            color: #fff;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #4ade80;
+            color: #1a1a2e;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #game-container {
+            background: #000;
+            border: 4px solid #4ade80;
+            border-radius: 8px;
+            line-height: 0;
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
+        }
+        
+        #game-container canvas {
+            display: block;
+            max-width: 100%;
+            image-rendering: pixelated;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: rgba(59, 59, 92, 0.8);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .tips {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(42, 42, 74, 0.8);
+            border-radius: 8px;
+            max-width: 512px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        
+        .tips h3 {
+            color: #4ade80;
+            margin-bottom: 12px;
+        }
+        
+        .tips kbd {
+            background: #4a4a6a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🎮 网页版NES模拟器</h1>
+    
+    <div class="controls">
+        <div class="file-input-wrapper">
+            <button>📂 加载本地ROM</button>
+            <input type="file" id="rom-file" accept=".nes,.NES">
+        </div>
+        <button id="load-sample-btn">🎮 试玩测试ROM</button>
+        <button id="reset-btn" disabled>🔄 重置</button>
+        <button id="pause-btn" disabled>⏸️ 暂停</button>
+    </div>
+    
+    <div id="game-container">
+        <canvas id="screen" width="512" height="480"></canvas>
+    </div>
+    
+    <div class="status" id="status">等待加载ROM文件...</div>
+    
+    <div class="tips">
+        <h3>🎮 操作说明</h3>
+        <p><kbd>↑↓←→</kbd> 方向键移动</p>
+        <p><kbd>Z</kbd> / <kbd>A</kbd> A按钮</p>
+        <p><kbd>X</kbd> / <kbd>S</kbd> B按钮</p>
+        <p><kbd>Enter</kbd> 开始</p>
+        <p><kbd>Shift</kbd> 选择</p>
+    </div>
+    
+    <script src="https://unpkg.com/jsnes@1.1.0/dist/jsnes.min.js"></script>
+    <script>
+        const SCREEN_WIDTH = 512;
+        const SCREEN_HEIGHT = 480;
+        const NES_WIDTH = 256;
+        const NES_HEIGHT = 240;
+        
+        let nes = null;
+        let animationFrame = null;
+        let isRunning = false;
+        let isPaused = false;
+        
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const resetBtn = document.getElementById('reset-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const loadSampleBtn = document.getElementById('load-sample-btn');
+        const romFileInput = document.getElementById('rom-file');
+        
+        // 初始化
+        function init() {
+            statusEl.textContent = '请加载本地ROM文件 (*.nes)，或点击"试玩测试ROM"';
+        }
+        
+        // 启动模拟器
+        function startGame(romData) {
+            try {
+                if (nes) {
+                    cancelAnimationFrame(animationFrame);
+                    nes = null;
+                }
+                
+                nes = new jsnes.NES({
+                    onFrame: function(frameBuffer) {
+                        const imageData = ctx.createImageData(NES_WIDTH, NES_HEIGHT);
+                        for (let i = 0; i < frameBuffer.length; i++) {
+                            const pixel = frameBuffer[i];
+                            imageData.data[i * 4] = (pixel >> 16) & 0xFF;
+                            imageData.data[i * 4 + 1] = (pixel >> 8) & 0xFF;
+                            imageData.data[i * 4 + 2] = pixel & 0xFF;
+                            imageData.data[i * 4 + 3] = 255;
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+                    },
+                    onStatusUpdate: function(status) {
+                        // 静默处理状态更新
+                    }
+                });
+                
+                nes.loadROM(romData);
+                
+                isRunning = true;
+                isPaused = false;
+                resetBtn.disabled = false;
+                pauseBtn.disabled = false;
+                loadSampleBtn.disabled = true;
+                
+                loop();
+                statusEl.textContent = '🎮 游戏运行中 - 按Z/X键操作';
+            } catch (e) {
+                statusEl.textContent = '❌ ROM加载失败: ' + e.message;
+                console.error(e);
+            }
+        }
+        
+        // 游戏循环
+        function loop() {
+            if (!isRunning || isPaused) return;
+            nes.frame();
+            animationFrame = requestAnimationFrame(loop);
+        }
+        
+        // 键盘控制
+        const keyMap = {
+            'ArrowUp': jsnes.Controller.BUTTON_UP,
+            'ArrowDown': jsnes.Controller.BUTTON_DOWN,
+            'ArrowLeft': jsnes.Controller.BUTTON_LEFT,
+            'ArrowRight': jsnes.Controller.BUTTON_RIGHT,
+            'z': jsnes.Controller.BUTTON_A,
+            'Z': jsnes.Controller.BUTTON_A,
+            'x': jsnes.Controller.BUTTON_B,
+            'X': jsnes.Controller.BUTTON_B,
+            'a': jsnes.Controller.BUTTON_A,
+            'A': jsnes.Controller.BUTTON_A,
+            's': jsnes.Controller.BUTTON_B,
+            'S': jsnes.Controller.BUTTON_B,
+            'Enter': jsnes.Controller.BUTTON_START,
+            'Shift': jsnes.Controller.BUTTON_SELECT
+        };
+        
+        document.addEventListener('keydown', function(e) {
+            if (!nes) return;
+            const button = keyMap[e.key];
+            if (button !== undefined) {
+                nes.controller[1][button] = true;
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', function(e) {
+            if (!nes) return;
+            const button = keyMap[e.key];
+            if (button !== undefined) {
+                nes.controller[1][button] = false;
+            }
+        });
+        
+        // 文件加载
+        romFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            statusEl.textContent = '📖 读取ROM文件...';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const romData = new Uint8Array(e.target.result);
+                statusEl.textContent = '🎮 加载中...';
+                setTimeout(() => startGame(romData), 100);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        // 加载测试ROM
+        loadSampleBtn.addEventListener('click', function() {
+            statusEl.textContent = '🎮 加载测试ROM...';
+            
+            // 创建一个简单的测试ROM
+            const testRom = createTestRom();
+            startGame(testRom);
+        });
+        
+        // 创建测试ROM - 简单的动画测试
+        function createTestRom() {
+            // iNES header
+            const header = new Uint8Array([
+                0x4E, 0x45, 0x53, 0x1A,  // "NES" + EOF
+                0x02,  // 2 x 16KB PRG = 32KB
+                0x01,  // 1 x 8KB CHR
+                0x00,  // Mapper 0
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            ]);
+            
+            // PRG ROM (32KB) - 简单的测试代码
+            const prg = new Uint8Array(32 * 1024);
+            
+            // 写入一个简单的程序
+            // 这会让NES显示彩色图案
+            const code = [
+                0xA9, 0x00,       // LDA #$00
+                0x8D, 0x00, 0x20, // STA $2000
+                0xA9, 0x1C,       // LDA #$1C
+                0x8D, 0x01, 0x20, // STA $2001
+            ];
+            prg.set(code, 0x3FF0);  // 在复位向量附近
+            
+            // CHR ROM (8KB) - 图案数据
+            const chr = new Uint8Array(8 * 1024);
+            
+            // 创建简单的8x8精灵图案
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 8; x++) {
+                    const addr = y * 16 + x;
+                    // 创建棋盘格图案
+                    chr[addr] = ((x + y) % 2 === 0) ? 0xFF : 0x00;
+                }
+            }
+            
+            // 组合ROM
+            const rom = new Uint8Array(header.length + prg.length + chr.length);
+            rom.set(header, 0);
+            rom.set(prg, header.length);
+            rom.set(chr, header.length + prg.length);
+            
+            return rom;
+        }
+        
+        // 重置
+        resetBtn.addEventListener('click', function() {
+            if (nes) {
+                nes.reset();
+                statusEl.textContent = '🔄 游戏已重置';
+            }
+        });
+        
+        // 暂停
+        pauseBtn.addEventListener('click', function() {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? '▶️ 继续' : '⏸️ 暂停';
+            statusEl.textContent = isPaused ? '⏸️ 游戏已暂停' : '▶️ 游戏继续';
+            
+            if (!isPaused) {
+                loop();
+            }
+        });
+        
+        init();
+    </script>
+</body>
+</html>
