@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v1.8</title>
+ <title>NES 游戏模拟器 v1.9</title>
  <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -25,7 +25,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v1.8</h1>
+ <h1>🎮 NES 游戏模拟器 v1.9</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -49,6 +49,7 @@
 
  <script>
  var browser = null;
+ var lastTime = 0;
  var timerId = null;
 
  function log(msg) { document.getElementById('log').innerHTML = msg; console.log(msg); }
@@ -59,7 +60,18 @@
  document.getElementById('nes').innerHTML = '';
  }
 
- function runGame() { if (!browser || !browser.isRunning) return; browser.frame(); }
+ // 精确60fps
+ function runGame(timestamp) {
+ if (!browser || !browser.isRunning) return;
+ 
+ // 每帧间隔16.67ms (60fps)
+ if (timestamp - lastTime >= 16.67) {
+ browser.frame();
+ lastTime = timestamp;
+ }
+ 
+ timerId = requestAnimationFrame(runGame);
+ }
 
  function loadROM(romData) {
  try {
@@ -72,7 +84,8 @@
  });
  browser.loadROM(romData);
  browser.start();
- timerId = setInterval(runGame, 1000/60);
+ lastTime = performance.now();
+ timerId = requestAnimationFrame(runGame);
  log('游戏运行中！(60fps)');
  document.getElementById('gameTitle').textContent = '游戏运行中 - 按键操作';
  } catch (err) { log('错误: ' + err.message); console.error(err); }
@@ -80,15 +93,16 @@
 
  // 键盘控制
  document.addEventListener('keydown', function(e) {
+ console.log('按键:', e.key);
  if (!browser || !browser.nes) return;
- var key = e.key.toLowerCase();
+ var key = e.key;
  var btn = null;
- if (key === 'w') btn = jsnes.Controller.BUTTON_UP;
- else if (key === 's') btn = jsnes.Controller.BUTTON_DOWN;
- else if (key === 'a') btn = jsnes.Controller.BUTTON_LEFT;
- else if (key === 'd') btn = jsnes.Controller.BUTTON_RIGHT;
- else if (key === 'g') btn = jsnes.Controller.BUTTON_A;
- else if (key === 'h') btn = jsnes.Controller.BUTTON_B;
+ if (key === 'w' || key === 'W') btn = jsnes.Controller.BUTTON_UP;
+ else if (key === 's' || key === 'S') btn = jsnes.Controller.BUTTON_DOWN;
+ else if (key === 'a' || key === 'A') btn = jsnes.Controller.BUTTON_LEFT;
+ else if (key === 'd' || key === 'D') btn = jsnes.Controller.BUTTON_RIGHT;
+ else if (key === 'g' || key === 'G') btn = jsnes.Controller.BUTTON_A;
+ else if (key === 'h' || key === 'H') btn = jsnes.Controller.BUTTON_B;
  else if (key === '1') btn = jsnes.Controller.BUTTON_START;
  else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
  if (btn !== null) { browser.nes.controller[1][btn] = true; e.preventDefault(); }
@@ -96,14 +110,14 @@
 
  document.addEventListener('keyup', function(e) {
  if (!browser || !browser.nes) return;
- var key = e.key.toLowerCase();
+ var key = e.key;
  var btn = null;
- if (key === 'w') btn = jsnes.Controller.BUTTON_UP;
- else if (key === 's') btn = jsnes.Controller.BUTTON_DOWN;
- else if (key === 'a') btn = jsnes.Controller.BUTTON_LEFT;
- else if (key === 'd') btn = jsnes.Controller.BUTTON_RIGHT;
- else if (key === 'g') btn = jsnes.Controller.BUTTON_A;
- else if (key === 'h') btn = jsnes.Controller.BUTTON_B;
+ if (key === 'w' || key === 'W') btn = jsnes.Controller.BUTTON_UP;
+ else if (key === 's' || key === 'S') btn = jsnes.Controller.BUTTON_DOWN;
+ else if (key === 'a' || key === 'A') btn = jsnes.Controller.BUTTON_LEFT;
+ else if (key === 'd' || key === 'D') btn = jsnes.Controller.BUTTON_RIGHT;
+ else if (key === 'g' || key === 'G') btn = jsnes.Controller.BUTTON_A;
+ else if (key === 'h' || key === 'H') btn = jsnes.Controller.BUTTON_B;
  else if (key === '1') btn = jsnes.Controller.BUTTON_START;
  else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
  if (btn !== null) { browser.nes.controller[1][btn] = false; }
