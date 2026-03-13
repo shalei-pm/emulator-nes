@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.0</title>
+ <title>NES 游戏模拟器 v3.1</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -25,7 +25,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.0</h1>
+ <h1>🎮 NES 游戏模拟器 v3.1</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -68,7 +68,6 @@
  try {
  destroyOldGame();
  log('加载ROM: ' + romData.length + ' bytes');
- console.log('jsnes keys:', Object.keys(jsnes));
  
  nes = new jsnes.NES({
   width: 512,
@@ -77,8 +76,12 @@
  });
 
  nes.loadROM(romData);
- console.log('nes keys:', Object.keys(nes));
- console.log('controller:', nes.controller);
+ 
+ console.log('=== DEBUG ===');
+ console.log('nes.controller:', nes.controller);
+ console.log('nes.controller[1]:', nes.controller[1]);
+ console.log('Controller.BUTTON_A:', jsnes.Controller.BUTTON_A);
+ console.log('==============');
  
  timerId = setInterval(runFrame, 1000 / 60);
  
@@ -92,21 +95,24 @@
  if (!nes || !nes.isRunning) return;
  
  var key = e.key.toLowerCase();
+ console.log('按键:', key);
+ 
+ // 用按钮名称字符串
  var btn = null;
+ if (key === 'w') btn = 'UP';
+ else if (key === 's') btn = 'DOWN';
+ else if (key === 'a') btn = 'LEFT';
+ else if (key === 'd') btn = 'RIGHT';
+ else if (key === 'g') btn = 'A';
+ else if (key === 'h') btn = 'B';
+ else if (key === '1') btn = 'START';
+ else if (key === '2') btn = 'SELECT';
  
- if (key === 'w') btn = jsnes.Controller.BUTTON_UP;
- else if (key === 's') btn = jsnes.Controller.BUTTON_DOWN;
- else if (key === 'a') btn = jsnes.Controller.BUTTON_LEFT;
- else if (key === 'd') btn = jsnes.Controller.BUTTON_RIGHT;
- else if (key === 'g') btn = jsnes.Controller.BUTTON_A;
- else if (key === 'h') btn = jsnes.Controller.BUTTON_B;
- else if (key === '1') btn = jsnes.Controller.BUTTON_START;
- else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
- 
- if (btn !== null) {
- nes.controller[1][btn] = true;
+ if (btn) {
+ nes.controller[1].write(btn, true);
  e.preventDefault();
- log('按下: ' + key);
+ log('按下: ' + key + ' (' + btn + ')');
+ console.log('写入:', btn, true);
  }
  });
 
@@ -115,18 +121,17 @@
  
  var key = e.key.toLowerCase();
  var btn = null;
+ if (key === 'w') btn = 'UP';
+ else if (key === 's') btn = 'DOWN';
+ else if (key === 'a') btn = 'LEFT';
+ else if (key === 'd') btn = 'RIGHT';
+ else if (key === 'g') btn = 'A';
+ else if (key === 'h') btn = 'B';
+ else if (key === '1') btn = 'START';
+ else if (key === '2') btn = 'SELECT';
  
- if (key === 'w') btn = jsnes.Controller.BUTTON_UP;
- else if (key === 's') btn = jsnes.Controller.BUTTON_DOWN;
- else if (key === 'a') btn = jsnes.Controller.BUTTON_LEFT;
- else if (key === 'd') btn = jsnes.Controller.BUTTON_RIGHT;
- else if (key === 'g') btn = jsnes.Controller.BUTTON_A;
- else if (key === 'h') btn = jsnes.Controller.BUTTON_B;
- else if (key === '1') btn = jsnes.Controller.BUTTON_START;
- else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
- 
- if (btn !== null) {
- nes.controller[1][btn] = false;
+ if (btn) {
+ nes.controller[1].write(btn, false);
  }
  });
 
