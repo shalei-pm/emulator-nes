@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传ROM - NES模拟器</title>
+    <script src="https://unpkg.com/jsnes@1.1.0/dist/jsnes.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            color: #fff; 
+        }
+        h1 { margin-bottom: 20px; color: #4ade80; }
+        
+        .upload-box {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            border: 2px dashed #4ade80;
+        }
+        
+        input[type="file"] { margin: 20px 0; }
+        
+        #game-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        canvas {
+            max-width: 100%;
+            border: 4px solid #4ade80;
+        }
+    </style>
+</head>
+<body>
+    <h1>📂 上传ROM</h1>
+    
+    <div class="upload-box">
+        <p>选择NES ROM文件 (.nes)</p>
+        <input type="file" id="rom-file" accept=".nes">
+        <p id="status"></p>
+    </div>
+    
+    <div id="game-container">
+        <canvas id="screen" width="512" height="480"></canvas>
+    </div>
+
+    <script>
+        const NES_WIDTH = 256, NES_HEIGHT = 240;
+        let nes = null, animationFrame = null;
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+        
+        document.getElementById('rom-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('status').textContent = '加载中...';
+            
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const romData = new Uint8Array(ev.target.result);
+                    
+                    nes = new jsnes.NES({
+                        onFrame: function(frameBuffer) {
+                            const img = ctx.createImageData(NES_WIDTH, NES_HEIGHT);
+                            for (let i = 0; i < frameBuffer.length; i++) {
+                                const p = frameBuffer[i];
+                                img.data[i*4] = (p>>16)&0xFF;
+                                img.data[i*4+1] = (p>>8)&0xFF;
+                                img.data[i*4+2] = p&0xFF;
+                                img.data[i*4+3] = 255;
+                            }
+                            ctx.putImageData(img, 0, 0);
+                        }
+                    });
+                    
+                    nes.loadROM(romData);
+                    document.getElementById('game-container').style.display = 'block';
+                    document.getElementById('status').textContent = '运行中！按键：方向键+Z/X';
+                    
+                    function loop() { nes.frame(); animationFrame = requestAnimationFrame(loop); }
+                    loop();
+                } catch(e) {
+                    document.getElementById('status').textContent = '错误: ' + e.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
