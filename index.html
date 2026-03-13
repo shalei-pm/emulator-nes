@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v4.0</title>
+ <title>NES 游戏模拟器 v4.1</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -26,7 +26,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v4.0</h1>
+ <h1>🎮 NES 游戏模拟器 v4.1</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -54,7 +54,7 @@
  var canvas = null;
  var ctx = null;
  var logLines = [];
- var pressedKeys = {}; // 记录按下的键
+ var pressedAB = {}; // 只记录 A/B 的按下状态
 
  function log(msg) { 
   logLines.push(msg);
@@ -76,12 +76,14 @@
  var frameCount = 0;
  function gameLoop() {
   if (nes) {
-   // 连发：每3帧触发一次
-   for (var key in pressedKeys) {
-    if (pressedKeys[key] && frameCount % 3 === 0) {
-     var btn = keyMap[key];
-     if (btn) nes.buttonDown(1, btn);
-    }
+   // 连发：每3帧触发一次 A/B
+   if (pressedAB['g'] && frameCount % 3 === 0) {
+    nes.buttonDown(1, 'A');
+    nes.buttonUp(1, 'A');
+   }
+   if (pressedAB['h'] && frameCount % 3 === 0) {
+    nes.buttonDown(1, 'B');
+    nes.buttonUp(1, 'B');
    }
    
    nes.frame();
@@ -132,13 +134,11 @@
   var key = e.key.toLowerCase();
   var btn = keyMap[key];
   if (btn) {
-   // 保持 v3.9 的逻辑
-   if (nes.controllers[1].state) {
-    nes.controllers[1].state[jsnes.Controller['BUTTON_' + btn]] = true;
-   } else {
-    nes.buttonDown(1, btn);
+   // 用 buttonDown/buttonUp 方式
+   nes.buttonDown(1, btn);
+   if (key === 'g' || key === 'h') {
+    pressedAB[key] = true;
    }
-   pressedKeys[key] = true;
    e.preventDefault();
   }
  });
@@ -148,12 +148,10 @@
   var key = e.key.toLowerCase();
   var btn = keyMap[key];
   if (btn) {
-   if (nes.controllers[1].state) {
-    nes.controllers[1].state[jsnes.Controller['BUTTON_' + btn]] = false;
-   } else {
-    nes.buttonUp(1, btn);
+   nes.buttonUp(1, btn);
+   if (key === 'g' || key === 'h') {
+    pressedAB[key] = false;
    }
-   pressedKeys[key] = false;
   }
  });
 
@@ -166,7 +164,7 @@
   reader.readAsBinaryString(file);
  });
 
- log('jsNES v4.0 - 上传ROM开始');
+ log('jsNES v4.1 - 上传ROM开始');
  </script>
 </body>
 </html>
