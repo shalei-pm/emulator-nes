@@ -22,9 +22,6 @@
         button { padding: 10px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; background: #3b3b5c; color: #fff; }
         button:hover { background: #4ade80; color: #1a1a2e; }
         
-        .game-select { margin-bottom: 20px; }
-        .game-select select { padding: 10px 20px; font-size: 14px; border-radius: 8px; background: #3b3b5c; color: #fff; border: none; }
-        
         #game-container {
             width: 100%;
             max-width: 800px;
@@ -43,54 +40,36 @@
         
         .tips { margin-top: 20px; padding: 20px; background: rgba(42, 42, 74, 0.8); border-radius: 8px; max-width: 800px; font-size: 13px; line-height: 1.8; }
         .tips h3 { color: #4ade80; margin-bottom: 12px; }
-        .tips kbd { background: #4a4a6a; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
     </style>
 </head>
 <body>
     <h1>🎮 网页版NES模拟器</h1>
     
-    <div class="game-select">
-        <select id="game-select">
-            <option value="">-- 选择游戏 --</option>
-            <option value="smb">超级玛丽 (Super Mario Bros)</option>
-            <option value="tetris">俄罗斯方块 (Tetris)</option>
-            <option value="zeld">塞尔达 (Zelda)</option>
-            <option value="metroid">银河战士 (Metroid)</option>
-        </select>
+    <div class="controls">
+        <button onclick="loadGame('')">超级玛丽</button>
     </div>
     
     <div id="game-container">
-        <iframe id="game-frame" src="about:blank" allow="autoplay; fullscreen"></iframe>
+        <iframe id="game-frame" src="about:blank" allow="autoplay; fullscreen; gamepad"></iframe>
     </div>
     
     <div class="tips">
-        <h3>🎮 操作说明</h3>
-        <p>点击上方游戏开始，或在模拟器中使用键盘：</p>
-        <p><kbd>↑↓←→</kbd> 方向键</p>
-        <p><kbd>Z</kbd> / <kbd>X</kbd> 按钮</p>
-        <p><kbd>Enter</kbd> 开始</p>
+        <h3>说明</h3>
+        <p>点击上方按钮开始游戏</p>
     </div>
 
     <script>
-        const gameSelect = document.getElementById('game-select');
         const gameFrame = document.getElementById('game-frame');
         
-        // 游戏URL映射 (使用 emulatorjs.org)
-        const games = {
-            'smb': 'https://emulatorjs.org/embed/nes?rom=https://dl.romsman.net/files/Super%20Mario%20Bros.%20%28U%29.nes',
-            'tetris': 'https://emulatorjs.org/embed/nes?rom=https://dl.romsman.net/files/Tetris%20%28U%29.nes',
-            'zeld': 'https://emulatorjs.org/embed/nes?rom=https://dl.romsman.net/files/Legend%20of%20Zelda%2C%20The%20%28U%29%20%28Rev%20A%29.nes',
-            'metroid': 'https://emulatorjs.org/embed/nes?rom=https://dl.romsman.net/files/Metroid%20%28U%29.nes'
-        };
+        function loadGame(rom) {
+            // 使用 emulatorjs.org 的嵌入式模拟器
+            // 需要找可用的ROM URL
+            // 现在先用简单的方式
+            gameFrame.src = 'https://emulatorjs.org/embed/nes';
+        }
         
-        gameSelect.addEventListener('change', function() {
-            const gameId = this.value;
-            if (gameId && games[gameId]) {
-                gameFrame.src = games[gameId];
-            } else {
-                gameFrame.src = 'about:blank';
-            }
-        });
+        // 加载默认游戏
+        loadGame('');
     </script>
 </body>
 </html>
