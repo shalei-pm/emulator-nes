@@ -26,7 +26,7 @@
  border: 4px solid #4ecdc4;
  border-radius: 8px;
  width: 512px;
- height: 384px;  /* 4:3比例，256x240 -> 512x480也差不多 */
+ height: 384px;
  margin: 0 auto;
  display: block;
  image-rendering: pixelated;
@@ -125,8 +125,6 @@
  <script>
  var nes = null;
  var animationId = null;
- var frameSkip = 0;
- var frameCount = 0;
 
  function log(msg) {
  document.getElementById('log').innerHTML = msg;
@@ -135,7 +133,7 @@
 
  function destroyOldGame() {
  if (nes) {
- try { nes.stop(); nes = null; } catch(e) {}
+ try { nes = null; } catch(e) {}
  }
  if (animationId) {
  cancelAnimationFrame(animationId);
@@ -145,13 +143,11 @@
  }
 
  function runGame() {
- if (!nes || !nes.isRunning()) return;
+ if (!nes) return;
  
- // 降速：每2帧跳过一帧
- frameCount++;
- if (frameCount % 2 === 0) {
+ try {
  nes.frame();
- }
+ } catch(e) {}
  
  animationId = requestAnimationFrame(runGame);
  }
@@ -185,7 +181,6 @@
  });
 
  nes.loadROM(romData);
- nes.start();
  runGame();
  log('游戏运行中！按方向键选择，Enter开始');
  document.getElementById('gameTitle').textContent = '游戏运行中';
@@ -195,9 +190,7 @@
  }
  }
 
- // 键盘控制 - 支持菜单导航
- var keyState = {};
- 
+ // 键盘控制
  document.addEventListener('keydown', function(e) {
  if (!nes) return;
  
@@ -212,15 +205,14 @@
  else if (key === 'x') btn = jsnes.Controller.BUTTON_B;
  else if (key === 'enter') btn = jsnes.Controller.BUTTON_START;
  else if (key === 'shift') btn = jsnes.Controller.BUTTON_SELECT;
- else if (key === ' ') { nes.togglePause(); e.preventDefault(); return; }
+ else if (key === ' ') { e.preventDefault(); return; }
  
  if (btn !== null) {
  nes.controller[1][btn] = true;
- keyState[btn] = true;
  e.preventDefault();
  }
  });
- 
+
  document.addEventListener('keyup', function(e) {
  if (!nes) return;
  
@@ -238,7 +230,6 @@
  
  if (btn !== null) {
  nes.controller[1][btn] = false;
- keyState[btn] = false;
  }
  });
 
