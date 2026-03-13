@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v5.0</title>
+ <title>NES 游戏模拟器 v5.1</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -26,7 +26,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v5.0</h1>
+ <h1>🎮 NES 游戏模拟器 v5.1</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -40,12 +40,11 @@
  <h3>🎮 操作说明</h3>
  <div class="control-grid">
  <div><span class="key">W/S/A/D</span> 上下左右</div>
- <div><span class="key">G</span> A (单发)</div>
- <div><span class="key">H</span> B (单发)</div>
+ <div><span class="key">G</span> A</div>
+ <div><span class="key">H</span> B</div>
  <div><span class="key">1</span> 开始</div>
- <div><span class="key">2</span> Select选择</div>
+ <div><span class="key">2</span> Select</div>
  </div>
- <div class="turbo">🔫 按住 <b>Z</b> = A连发 | 按住 <b>X</b> = B连发</div>
  </div>
  </div>
 
@@ -54,6 +53,7 @@
  var canvas = null;
  var ctx = null;
  var logLines = [];
+ var holdingKeys = {}; // 记录按住的键
 
  function log(msg) { 
   logLines.push(msg);
@@ -75,6 +75,12 @@
  var frameCount = 0;
  function gameLoop() {
   if (nes) {
+   // 检测连发：每5帧触发一次按住状态
+   if (frameCount % 5 === 0) {
+    if (holdingKeys['g']) nes.buttonDown(1, 'A');
+    if (holdingKeys['h']) nes.buttonDown(1, 'B');
+   }
+   
    nes.frame();
    frameCount++;
   }
@@ -106,29 +112,20 @@
    log('加载成功!');
    
    gameLoop();
-   log('游戏开始！G/H单发，Z/X连发');
+   log('游戏开始！');
   } catch (err) { 
    log('错误: ' + err.message); 
   }
  }
 
- // 单发按键 - G/H
  var keyMap = {
   'g': 'A', 'h': 'B', '2': 'SELECT', '1': 'START',
   'w': 'UP', 's': 'DOWN', 'a': 'LEFT', 'd': 'RIGHT'
  };
 
- // 连发按键 - Z/X (用 TURBO 按钮)
- var turboMap = {
-  'z': 'TURBO_A', 'x': 'TURBO_B'
- };
-
  document.addEventListener('keydown', function(e) {
   if (!nes) return;
-  
   var key = e.key.toLowerCase();
-  
-  // 先检查单发
   var btn = keyMap[key];
   if (btn) {
    if (nes.controllers[1].state) {
@@ -136,24 +133,14 @@
    } else {
     nes.buttonDown(1, btn);
    }
+   holdingKeys[key] = true;
    e.preventDefault();
-   return;
-  }
-  
-  // 再检查连发
-  var turboBtn = turboMap[key];
-  if (turboBtn) {
-   nes.buttonDown(1, turboBtn);
-   e.preventDefault();
-   return;
   }
  });
 
  document.addEventListener('keyup', function(e) {
   if (!nes) return;
-  
   var key = e.key.toLowerCase();
-  
   var btn = keyMap[key];
   if (btn) {
    if (nes.controllers[1].state) {
@@ -161,12 +148,7 @@
    } else {
     nes.buttonUp(1, btn);
    }
-   return;
-  }
-  
-  var turboBtn = turboMap[key];
-  if (turboBtn) {
-   nes.buttonUp(1, turboBtn);
+   holdingKeys[key] = false;
   }
  });
 
@@ -179,7 +161,7 @@
   reader.readAsBinaryString(file);
  });
 
- log('jsNES v5.0 - G/H单发，Z/X连发');
+ log('jsNES v5.1 - 上传ROM开始');
  </script>
 </body>
 </html>
