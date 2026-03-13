@@ -3,8 +3,8 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v2.4</title>
- <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
+ <title>NES 游戏模拟器 v3.0</title>
+ <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
  h1 { text-align: center; margin-bottom: 20px; font-size: 28px; }
@@ -25,7 +25,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v2.4</h1>
+ <h1>🎮 NES 游戏模拟器 v3.0</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -48,48 +48,48 @@
  </div>
 
  <script>
- var browser = null;
+ var nes = null;
  var timerId = null;
 
  function log(msg) { document.getElementById('log').innerHTML = msg; console.log('[NES]', msg); }
 
  function destroyOldGame() {
- if (browser) { try { browser.destroy(); } catch(e) {} browser = null; }
+ if (nes) { try { nes.stop(); } catch(e) {} nes = null; }
  if (timerId) { clearInterval(timerId); timerId = null; }
  document.getElementById('nes').innerHTML = '';
  }
 
  function runFrame() {
- if (!browser || !browser.isRunning) return;
- browser.frame();
+ if (!nes || !nes.isRunning) return;
+ nes.frame();
  }
 
  function loadROM(romData) {
  try {
  destroyOldGame();
  log('加载ROM: ' + romData.length + ' bytes');
+ console.log('jsnes keys:', Object.keys(jsnes));
  
- browser = new jsnes.Browser({
- container: document.getElementById('nes'),
- onError: function(e) { log('错误: ' + e); console.error(e); },
- onStatusUpdate: function(s) { log('状态: ' + s); }
+ nes = new jsnes.NES({
+  width: 512,
+  height: 480,
+  container: document.getElementById('nes')
  });
 
- browser.loadROM(romData);
- 
- console.log('browser keys:', Object.keys(browser));
- console.log('browser.nes:', browser.nes ? Object.keys(browser.nes) : 'null');
+ nes.loadROM(romData);
+ console.log('nes keys:', Object.keys(nes));
+ console.log('controller:', nes.controller);
  
  timerId = setInterval(runFrame, 1000 / 60);
  
  log('运行中！按键: W/S/A/D/G/H/1/2');
- document.getElementById('gameTitle').textContent = '游戏中';
+ document.getElementById('gameTitle').textContent = '游戏中 - 请测试按键';
  } catch (err) { log('错误: ' + err.message); console.error(err); }
  }
 
- // 键盘控制 - 用 jsnes.Controller 按钮常量
+ // 键盘控制
  document.addEventListener('keydown', function(e) {
- if (!browser || !browser.nes) return;
+ if (!nes || !nes.isRunning) return;
  
  var key = e.key.toLowerCase();
  var btn = null;
@@ -104,16 +104,14 @@
  else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
  
  if (btn !== null) {
- // 设置按键
- browser.nes.setControllerInput(1, btn, true);
+ nes.controller[1][btn] = true;
  e.preventDefault();
- log('按下: ' + key + ' btn=' + btn);
- console.log('input:', btn, true);
+ log('按下: ' + key);
  }
  });
 
  document.addEventListener('keyup', function(e) {
- if (!browser || !browser.nes) return;
+ if (!nes || !nes.isRunning) return;
  
  var key = e.key.toLowerCase();
  var btn = null;
@@ -128,7 +126,7 @@
  else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
  
  if (btn !== null) {
- browser.nes.setControllerInput(1, btn, false);
+ nes.controller[1][btn] = false;
  }
  });
 
@@ -141,7 +139,7 @@
  reader.readAsArrayBuffer(file);
  });
 
- log('jsNES v2 已加载，上传ROM开始游戏');
+ log('jsNES v1 已加载，上传ROM开始游戏');
  </script>
 </body>
 </html>
