@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.9</title>
+ <title>NES 游戏模拟器 v4.0</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -20,12 +20,13 @@
  .controls h3 { margin: 0 0 15px 0; color: #4ecdc4; font-size: 16px; }
  .control-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
  .key { background: linear-gradient(135deg, #2d3436, #1a1a2e); border: 1px solid #4ecdc4; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 12px; color: #4ecdc4; }
- #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #0f0; max-width: 512px; margin: 10px auto 0 auto; height: 80px; overflow-y: auto; white-space: pre-wrap; }
+ .turbo { color: #ffe66d; font-size: 12px; margin-top: 10px; text-align: center; }
+ #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #0f0; max-width: 512px; margin: 10px auto 0 auto; height: 60px; overflow-y: auto; white-space: pre-wrap; }
  @media (max-width: 600px) { #game-container { width: 100%; height: auto; aspect-ratio: 4/3; } }
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.9</h1>
+ <h1>🎮 NES 游戏模拟器 v4.0</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -44,6 +45,7 @@
  <div><span class="key">1</span> 开始</div>
  <div><span class="key">2</span> Select选择</div>
  </div>
+ <div class="turbo">💡 按住G或H可连发！</div>
  </div>
  </div>
 
@@ -52,13 +54,12 @@
  var canvas = null;
  var ctx = null;
  var logLines = [];
+ var pressedKeys = {}; // 记录按下的键
 
  function log(msg) { 
-  var time = new Date().toLocaleTimeString();
-  logLines.push('[' + time + '] ' + msg);
-  if (logLines.length > 30) logLines.shift();
+  logLines.push(msg);
+  if (logLines.length > 20) logLines.shift();
   document.getElementById('log').textContent = logLines.join('\n');
-  document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
  }
 
  function initCanvas() {
@@ -75,9 +76,16 @@
  var frameCount = 0;
  function gameLoop() {
   if (nes) {
+   // 连发：每3帧触发一次
+   for (var key in pressedKeys) {
+    if (pressedKeys[key] && frameCount % 3 === 0) {
+     var btn = keyMap[key];
+     if (btn) nes.buttonDown(1, btn);
+    }
+   }
+   
    nes.frame();
    frameCount++;
-   if (frameCount % 60 === 0) log('frame=' + frameCount);
   }
   requestAnimationFrame(gameLoop);
  }
@@ -105,16 +113,15 @@
 
    nes.loadROM(romData);
    log('加载成功!');
-   log('ctrl[1] keys: ' + Object.keys(nes.controllers[1]));
    
    gameLoop();
-   log('游戏开始！按G');
+   log('游戏开始！按G/H');
   } catch (err) { 
    log('错误: ' + err.message); 
   }
  }
 
- // 直接设置 controller[1] 的 state
+ // 保持和 v3.9 一样的按键映射
  var keyMap = {
   'g': 'A', 'h': 'B', '2': 'SELECT', '1': 'START',
   'w': 'UP', 's': 'DOWN', 'a': 'LEFT', 'd': 'RIGHT'
@@ -122,29 +129,31 @@
 
  document.addEventListener('keydown', function(e) {
   if (!nes) return;
-  var btn = keyMap[e.key.toLowerCase()];
+  var key = e.key.toLowerCase();
+  var btn = keyMap[key];
   if (btn) {
-   // 尝试直接修改 state
+   // 保持 v3.9 的逻辑
    if (nes.controllers[1].state) {
     nes.controllers[1].state[jsnes.Controller['BUTTON_' + btn]] = true;
-    log('按下' + btn + ' -> state=' + nes.controllers[1].state);
    } else {
     nes.buttonDown(1, btn);
-    log('按下' + btn);
    }
+   pressedKeys[key] = true;
    e.preventDefault();
   }
  });
 
  document.addEventListener('keyup', function(e) {
   if (!nes) return;
-  var btn = keyMap[e.key.toLowerCase()];
+  var key = e.key.toLowerCase();
+  var btn = keyMap[key];
   if (btn) {
    if (nes.controllers[1].state) {
     nes.controllers[1].state[jsnes.Controller['BUTTON_' + btn]] = false;
    } else {
     nes.buttonUp(1, btn);
    }
+   pressedKeys[key] = false;
   }
  });
 
@@ -157,7 +166,7 @@
   reader.readAsBinaryString(file);
  });
 
- log('jsNES v1 - 上传ROM开始');
+ log('jsNES v4.0 - 上传ROM开始');
  </script>
 </body>
 </html>
