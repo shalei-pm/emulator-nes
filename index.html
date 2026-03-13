@@ -61,58 +61,27 @@
  background: linear-gradient(135deg, #4ecdc4, #44a08d); 
  box-shadow: 0 0 15px rgba(78, 205, 196, 0.5);
  }
- .btn:disabled {
- opacity: 0.5;
- cursor: not-allowed;
+ 
+ .file-input {
+ display: none;
  }
+ 
+ .file-label {
+ background: linear-gradient(135deg, #f093fb, #f5576c);
+ display: inline-block;
+ padding: 12px 20px;
+ margin: 5px;
+ font-size: 14px;
+ border-radius: 8px;
+ cursor: pointer;
+ }
+ .file-label:hover { transform: scale(1.05); }
  
  .game-title { 
  font-size: 20px; 
  margin: 15px 0;
  color: #ffe66d;
  text-align: center;
- }
- 
- .controls {
- background: rgba(255,255,255,0.05);
- border: 1px solid rgba(255,255,255,0.1);
- border-radius: 12px;
- padding: 20px;
- max-width: 512px;
- margin: 20px auto 0 auto;
- display: none;
- }
- .controls.show { display: block; }
- .controls h3 {
- margin: 0 0 15px 0;
- color: #4ecdc4;
- font-size: 16px;
- text-align: center;
- }
- .control-grid {
- display: grid;
- grid-template-columns: repeat(2, 1fr);
- gap: 8px;
- }
- .control-item {
- display: flex;
- align-items: center;
- gap: 10px;
- }
- .key {
- background: linear-gradient(135deg, #2d3436, #1a1a2e);
- border: 1px solid #4ecdc4;
- border-radius: 6px;
- padding: 5px 10px;
- font-family: monospace;
- font-size: 12px;
- color: #4ecdc4;
- min-width: 45px;
- text-align: center;
- }
- .control-item span:last-child {
- color: rgba(255,255,255,0.7);
- font-size: 13px;
  }
  
  #log {
@@ -143,39 +112,24 @@
  
  <div class="game-container">
  <div class="game-selector">
- <button class="btn active" id="btn-contra" onclick="loadGame('contra')">🎯 魂斗罗</button>
+ <button class="btn" onclick="resetGame()">🔄 重置</button>
+ <label class="file-label" for="rom-file">📂 上传ROM</label>
+ <input type="file" id="rom-file" class="file-input" accept=".nes,.NES">
  </div>
  
- <div class="game-title" id="gameTitle">点击"魂斗罗"开始游戏</div>
+ <div class="game-title" id="gameTitle">上传ROM文件开始游戏</div>
  
  <div id="nes"></div>
  
  <div id="log"></div>
- 
- <div class="controls show" id="controls-contra">
- <h3>🎯 魂斗罗 - 操作说明</h3>
- <div class="control-grid">
- <div class="control-item"><span class="key">← →</span><span>左右移动</span></div>
- <div class="control-item"><span class="key">↑</span><span>向上移动</span></div>
- <div class="control-item"><span class="key">↓</span><span>下蹲</span></div>
- <div class="control-item"><span class="key">Z</span><span>射击</span></div>
- <div class="control-item"><span class="key">X</span><span>跳跃</span></div>
- <div class="control-item"><span class="key">Enter</span><span>开始游戏</span></div>
- </div>
- </div>
  </div>
 
  <script>
  var browser = null;
- var currentGame = null;
 
- var games = {
- contra: { name: '🎯 魂斗罗', title: '魂斗罗', file: 'contra.nes', controlsId: 'controls-contra' }
- };
-
- function log(msg, type) {
+ function log(msg) {
  var div = document.getElementById('log');
- div.innerHTML += msg + ' ';
+ div.innerHTML = msg + ' ';
  div.scrollTop = div.scrollHeight;
  console.log(msg);
  }
@@ -188,37 +142,47 @@
  document.getElementById('nes').innerHTML = '';
  }
 
- function loadGame(gameName) {
- var game = games[gameName];
- if (!game || !game.file) {
- log('游戏暂不可用', 'info');
- return;
+ function resetGame() {
+ destroyOldGame();
+ log('已重置，请上传ROM');
  }
- 
+
+ function loadROM(romData) {
  try {
  destroyOldGame();
- currentGame = gameName;
- log('开始加载 ' + game.title + '...', 'info');
+ log('加载ROM: ' + romData.length + ' bytes');
  
  browser = new jsnes.Browser({
  container: document.getElementById('nes'),
- onError: function(e) { log('错误: ' + e, 'error'); },
- onStatusUpdate: function(s) { log('状态: ' + s, 'info'); }
+ onError: function(e) { log('错误: ' + e); },
+ onStatusUpdate: function(s) { log('状态: ' + s); }
  });
 
- jsnes.Browser.loadROMFromURL(game.file, function(err, romData) {
- if (err) { log('加载错误: ' + err, 'error'); return; }
- log('ROM: ' + romData.length + ' bytes', 'success');
  browser.loadROM(romData);
- log('游戏启动成功!', 'success');
- });
+ log('游戏启动成功!');
+ document.getElementById('gameTitle').textContent = '游戏运行中 - 按键操作';
  } catch (err) {
- log('错误: ' + err.message, 'error');
+ log('错误: ' + err.message);
  console.error(err);
  }
  }
 
- log('jsNES v2 已加载', 'success');
+ // 文件上传处理
+ document.getElementById('rom-file').addEventListener('change', function(e) {
+ var file = e.target.files[0];
+ if (!file) return;
+ 
+ log('读取文件: ' + file.name);
+ 
+ var reader = new FileReader();
+ reader.onload = function(ev) {
+ var romData = new Uint8Array(ev.target.result);
+ loadROM(romData);
+ };
+ reader.readAsArrayBuffer(file);
+ });
+
+ log('jsNES v2 已加载，请上传ROM文件');
  </script>
 </body>
 </html>
