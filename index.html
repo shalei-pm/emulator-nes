@@ -3,14 +3,15 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.3</title>
+ <title>NES 游戏模拟器 v3.4</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
  h1 { text-align: center; margin-bottom: 20px; font-size: 28px; }
  .game-container { max-width: 600px; margin: 0 auto; }
  .game-selector { text-align: center; margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
- #nes { background: #000; border: 4px solid #4ecdc4; border-radius: 8px; width: 512px; height: 480px; margin: 0 auto; display: block; }
+ #game-container { background: #000; border: 4px solid #4ecdc4; border-radius: 8px; width: 512px; height: 480px; margin: 0 auto; position: relative; }
+ #game-container canvas { width: 100%; height: 100%; }
  .btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 20px; margin: 5px; font-size: 14px; cursor: pointer; border-radius: 8px; }
  .btn:hover { transform: scale(1.05); }
  .file-input { display: none; }
@@ -21,11 +22,11 @@
  .control-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
  .key { background: linear-gradient(135deg, #2d3436, #1a1a2e); border: 1px solid #4ecdc4; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 12px; color: #4ecdc4; }
  #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #888; max-width: 512px; margin: 10px auto 0 auto; }
- @media (max-width: 600px) { #nes { width: 100%; height: auto; aspect-ratio: 4/3; } }
+ @media (max-width: 600px) { #game-container { width: 100%; height: auto; aspect-ratio: 4/3; } }
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.3</h1>
+ <h1>🎮 NES 游戏模拟器 v3.4</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -33,7 +34,7 @@
  <input type="file" id="rom-file" class="file-input" accept=".nes,.NES">
  </div>
  <div class="game-title" id="gameTitle">上传ROM文件开始游戏</div>
- <div id="nes"></div>
+ <div id="game-container"></div>
  <div id="log"></div>
  <div class="controls">
  <h3>🎮 操作说明</h3>
@@ -49,107 +50,105 @@
 
  <script>
  var nes = null;
- var timerId = null;
+ var animationId = null;
 
- function log(msg) { document.getElementById('log').innerHTML = msg; console.log('[NES]', msg); }
-
- function destroyOldGame() {
- if (nes) { try { nes.stop(); } catch(e) {} nes = null; }
- if (timerId) { clearInterval(timerId); timerId = null; }
- document.getElementById('nes').innerHTML = '';
+ function log(msg) { 
+  document.getElementById('log').innerHTML = msg; 
+  console.log('[NES]', msg); 
  }
 
- function runFrame() {
- if (!nes || !nes.isRunning) return;
- nes.frame();
- }
-
- function loadROM(buffer) {
- try {
-  destroyOldGame();
-  
-  var header = new Uint8Array(buffer, 0, 16);
-  var headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' ');
-  var isValid = (header[0] === 0x4E && header[1] === 0x45 && header[2] === 0x53 && header[3] === 0x1A);
-  log('ROM: ' + headerHex + (isValid ? ' ✓' : ' ✗'));
-  
-  nes = new jsnes.NES({
-   width: 512,
-   height: 480,
-   container: document.getElementById('nes')
-  });
-
-  var uint8 = new Uint8Array(buffer);
-  var binary = '';
-  for (var i = 0; i < uint8.length; i++) {
-   binary += String.fromCharCode(uint8[i]);
+ function gameLoop() {
+  if (nes && nes.isRunning) {
+   nes.frame();
   }
-  
-  nes.loadROM(binary);
-  
-  // 尝试启动
-  console.log('nes.start:', typeof nes.start);
-  if (typeof nes.start === 'function') {
+  animationId = requestAnimationFrame(gameLoop);
+ }
+
+ function loadROM(romData) {
+  try {
+   log('加载ROM: ' + romData.length + ' bytes');
+   
+   nes = new jsnes.NES({
+    onFrame: function(buffer) {
+     var canvas = document.createElement('canvas');
+     canvas.width = 256;
+     canvas.height = 240;
+     var container = document.getElementById('game-container');
+     container.innerHTML = '';
+     container.appendChild(canvas);
+     
+     var ctx = canvas.getContext('2d');
+     var imageData = ctx.createImageData(256, 240);
+     for (var i = 0; i < buffer.length; i++) {
+      var pixel = buffer[i];
+      imageData.data[i * 4 + 0] = (pixel >> 0) & 0xFF;
+      imageData.data[i * 4 + 1] = (pixel >> 8) & 0xFF;
+      imageData.data[i * 4 + 2] = (pixel >> 16) & 0xFF;
+      imageData.data[i * 4 + 3] = 0xFF;
+     }
+     ctx.putImageData(imageData, 0, 0);
+    },
+    onAudioSample: function(sample) {}
+   });
+
+   nes.loadROM(romData);
+   
+   console.log('ROM loaded, isRunning:', nes.isRunning);
+   
+   // 启动循环
    nes.start();
+   gameLoop();
+   
+   log('游戏开始！按G测试');
+   document.getElementById('gameTitle').textContent = '游戏中 - 请按键';
+  } catch (err) { 
+   log('错误: ' + err.message); 
+   console.error(err); 
   }
-  
-  console.log('isRunning:', nes.isRunning);
-  console.log('controller:', nes.controller);
-  
-  timerId = setInterval(runFrame, 1000 / 60);
-  
-  log('运行中！按G测试');
-  document.getElementById('gameTitle').textContent = '游戏中 - 按G测试';
- } catch (err) { log('错误: ' + err.message); console.error(err); }
  }
 
- // 键盘 - buttonState 数组
+ // 键盘控制 - 按钮索引
+ var buttonMap = {
+  'g': 0, // A
+  'h': 1, // B
+  '2': 2, // Select
+  '1': 3, // Start
+  'w': 4, // Up
+  's': 5, // Down
+  'a': 6, // Left
+  'd': 7  // Right
+ };
+
  document.addEventListener('keydown', function(e) {
- if (!nes || !nes.isRunning) return;
- 
- var key = e.key.toLowerCase();
- var idx = null;
- if (key === 'g') idx = 0;
- else if (key === 'h') idx = 1;
- else if (key === '2') idx = 2;
- else if (key === '1') idx = 3;
- else if (key === 'w') idx = 4;
- else if (key === 's') idx = 5;
- else if (key === 'a') idx = 6;
- else if (key === 'd') idx = 7;
- 
- if (idx !== null) {
-  nes.controller[1].buttonState[idx] = true;
-  e.preventDefault();
-  console.log('按下:', key, 'idx=', idx, 'state=', nes.controller[1].buttonState);
- }
+  if (!nes || !nes.isRunning) return;
+  
+  var idx = buttonMap[e.key.toLowerCase()];
+  if (idx !== undefined) {
+   nes.controller[1].buttonState[idx] = true;
+   e.preventDefault();
+   console.log('按下:', e.key, 'idx=', idx);
+  }
  });
 
  document.addEventListener('keyup', function(e) {
- if (!nes || !nes.isRunning) return;
- var key = e.key.toLowerCase();
- var idx = null;
- if (key === 'g') idx = 0;
- else if (key === 'h') idx = 1;
- else if (key === '2') idx = 2;
- else if (key === '1') idx = 3;
- else if (key === 'w') idx = 4;
- else if (key === 's') idx = 5;
- else if (key === 'a') idx = 6;
- else if (key === 'd') idx = 7;
- if (idx !== null) nes.controller[1].buttonState[idx] = false;
+  if (!nes || !nes.isRunning) return;
+  
+  var idx = buttonMap[e.key.toLowerCase()];
+  if (idx !== undefined) {
+   nes.controller[1].buttonState[idx] = false;
+  }
  });
 
  document.getElementById('rom-file').addEventListener('change', function(e) {
- var file = e.target.files[0];
- if (!file) return;
- log('读取: ' + file.name);
- var reader = new FileReader();
- reader.onload = function(ev) { loadROM(ev.target.result); };
- reader.readAsArrayBuffer(file);
+  var file = e.target.files[0];
+  if (!file) return;
+  log('读取: ' + file.name);
+  var reader = new FileReader();
+  reader.onload = function(ev) { loadROM(ev.target.result); };
+  reader.readAsBinaryString(file);
  });
 
- log('jsNES v1 - 上传ROM开始');
+ log('jsNES v1 - 上传ROM开始游戏');
  </script>
 </body>
 </html>
