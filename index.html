@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v1.4</title>
+ <title>NES 游戏模拟器 v1.5</title>
  <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
  <style>
  body { 
@@ -26,7 +26,7 @@
  border: 4px solid #4ecdc4;
  border-radius: 8px;
  width: 512px;
- height: 480px;  /* 4:3 比例 */
+ height: 480px;
  margin: 0 auto;
  display: block;
  }
@@ -94,7 +94,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v1.4</h1>
+ <h1>🎮 NES 游戏模拟器 v1.5</h1>
  
  <div class="game-container">
  <div class="game-selector">
@@ -122,7 +122,7 @@
 
  <script>
  var browser = null;
- var frameCount = 0;
+ var timerId = null;
 
  function log(msg) {
  document.getElementById('log').innerHTML = msg;
@@ -134,19 +134,17 @@
  try { browser.destroy(); } catch(e) {}
  browser = null;
  }
+ if (timerId) {
+ clearInterval(timerId);
+ timerId = null;
+ }
  document.getElementById('nes').innerHTML = '';
  }
 
+ // NES是60fps，每帧约16.67ms
  function runGame() {
  if (!browser || !browser.isRunning) return;
- 
- // 降速：每4帧执行1帧
- frameCount++;
- if (frameCount % 10 !== 0) {
  browser.frame();
- }
- 
- requestAnimationFrame(runGame);
  }
 
  function loadROM(romData) {
@@ -162,8 +160,9 @@
 
  browser.loadROM(romData);
  browser.start();
- runGame();
- log('游戏运行中！');
+ // 用setInterval精确控制60fps
+ timerId = setInterval(runGame, 1000/60);
+ log('游戏运行中！(60fps)');
  document.getElementById('gameTitle').textContent = '游戏运行中 - 按键操作';
  } catch (err) {
  log('错误: ' + err.message);
