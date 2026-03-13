@@ -117,13 +117,12 @@
  <div><span class="key">Z</span> A按钮</div>
  <div><span class="key">X</span> B按钮</div>
  <div><span class="key">Enter</span> 开始</div>
- <div><span class="key">Space</span> 暂停</div>
  </div>
  </div>
  </div>
 
  <script>
- var nes = null;
+ var browser = null;
  var animationId = null;
 
  function log(msg) {
@@ -132,8 +131,9 @@
  }
 
  function destroyOldGame() {
- if (nes) {
- try { nes = null; } catch(e) {}
+ if (browser) {
+ try { browser.destroy(); } catch(e) {}
+ browser = null;
  }
  if (animationId) {
  cancelAnimationFrame(animationId);
@@ -143,12 +143,10 @@
  }
 
  function runGame() {
- if (!nes) return;
- 
- try {
- nes.frame();
- } catch(e) {}
- 
+ if (!browser) return;
+ if (browser.isRunning) {
+ browser.frame();
+ }
  animationId = requestAnimationFrame(runGame);
  }
 
@@ -157,33 +155,17 @@
  destroyOldGame();
  log('加载ROM: ' + romData.length + ' bytes');
  
- nes = new jsnes.NES({
- onFrame: function(frameBuffer) {
- var canvas = document.querySelector('#nes canvas');
- if (!canvas) {
- canvas = document.createElement('canvas');
- canvas.width = 256;
- canvas.height = 240;
- document.getElementById('nes').appendChild(canvas);
- }
- var ctx = canvas.getContext('2d');
- var imageData = ctx.createImageData(256, 240);
- for (var i = 0; i < frameBuffer.length; i++) {
- var p = frameBuffer[i];
- imageData.data[i*4] = (p >> 16) & 0xFF;
- imageData.data[i*4+1] = (p >> 8) & 0xFF;
- imageData.data[i*4+2] = p & 0xFF;
- imageData.data[i*4+3] = 255;
- }
- ctx.putImageData(imageData, 0, 0);
- },
+ browser = new jsnes.Browser({
+ container: document.getElementById('nes'),
+ onError: function(e) { log('错误: ' + e); },
  onStatusUpdate: function(s) { log('状态: ' + s); }
  });
 
- nes.loadROM(romData);
+ browser.loadROM(romData);
+ browser.start();
  runGame();
- log('游戏运行中！按方向键选择，Enter开始');
- document.getElementById('gameTitle').textContent = '游戏运行中';
+ log('游戏运行中！');
+ document.getElementById('gameTitle').textContent = '游戏运行中 - 按键操作';
  } catch (err) {
  log('错误: ' + err.message);
  console.error(err);
@@ -192,7 +174,7 @@
 
  // 键盘控制
  document.addEventListener('keydown', function(e) {
- if (!nes) return;
+ if (!browser) return;
  
  var key = e.key.toLowerCase();
  var btn = null;
@@ -205,16 +187,15 @@
  else if (key === 'x') btn = jsnes.Controller.BUTTON_B;
  else if (key === 'enter') btn = jsnes.Controller.BUTTON_START;
  else if (key === 'shift') btn = jsnes.Controller.BUTTON_SELECT;
- else if (key === ' ') { e.preventDefault(); return; }
  
  if (btn !== null) {
- nes.controller[1][btn] = true;
+ browser.nes.controller[1][btn] = true;
  e.preventDefault();
  }
  });
 
  document.addEventListener('keyup', function(e) {
- if (!nes) return;
+ if (!browser) return;
  
  var key = e.key.toLowerCase();
  var btn = null;
@@ -229,7 +210,7 @@
  else if (key === 'shift') btn = jsnes.Controller.BUTTON_SELECT;
  
  if (btn !== null) {
- nes.controller[1][btn] = false;
+ browser.nes.controller[1][btn] = false;
  }
  });
 
