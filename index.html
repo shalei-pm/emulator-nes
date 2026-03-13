@@ -6,109 +6,35 @@
  <title>NES 游戏模拟器 v1.7</title>
  <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
  <style>
- body { 
- background: linear-gradient(135deg, #1a1a2e, #16213e); 
- color: #fff; 
- font-family: 'Noto Sans SC', sans-serif;
- min-height: 100vh;
- margin: 0;
- padding: 20px;
- }
- 
+ body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
  h1 { text-align: center; margin-bottom: 20px; font-size: 28px; }
- 
  .game-container { max-width: 600px; margin: 0 auto; }
- 
  .game-selector { text-align: center; margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
- 
- #nes { 
- background: #000; 
- border: 4px solid #4ecdc4;
- border-radius: 8px;
- width: 512px;
- height: 480px;
- margin: 0 auto;
- display: block;
- }
- 
- .btn {
- background: linear-gradient(135deg, #667eea, #764ba2);
- color: white;
- border: none;
- padding: 12px 20px;
- margin: 5px;
- font-size: 14px;
- cursor: pointer;
- border-radius: 8px;
- }
+ #nes { background: #000; border: 4px solid #4ecdc4; border-radius: 8px; width: 512px; height: 480px; margin: 0 auto; display: block; }
+ .btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 20px; margin: 5px; font-size: 14px; cursor: pointer; border-radius: 8px; }
  .btn:hover { transform: scale(1.05); }
- 
  .file-input { display: none; }
- .file-label {
- background: linear-gradient(135deg, #f093fb, #f5576c);
- display: inline-block;
- padding: 12px 20px;
- margin: 5px;
- font-size: 14px;
- border-radius: 8px;
- cursor: pointer;
- }
- 
+ .file-label { background: linear-gradient(135deg, #f093fb, #f5576c); display: inline-block; padding: 12px 20px; margin: 5px; font-size: 14px; border-radius: 8px; cursor: pointer; }
  .game-title { font-size: 20px; margin: 15px 0; color: #ffe66d; text-align: center; }
- 
- .controls {
- background: rgba(255,255,255,0.05);
- border: 1px solid rgba(255,255,255,0.1);
- border-radius: 12px;
- padding: 20px;
- max-width: 512px;
- margin: 20px auto;
- }
+ .controls { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; max-width: 512px; margin: 20px auto; }
  .controls h3 { margin: 0 0 15px 0; color: #4ecdc4; font-size: 16px; }
  .control-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
- .key {
- background: linear-gradient(135deg, #2d3436, #1a1a2e);
- border: 1px solid #4ecdc4;
- border-radius: 6px;
- padding: 5px 10px;
- font-family: monospace;
- font-size: 12px;
- color: #4ecdc4;
- }
- 
- #log {
- background: #0f0f23;
- padding: 8px 15px;
- margin-top: 10px;
- font-family: monospace;
- font-size: 11px;
- border-radius: 8px;
- color: #888;
- max-width: 512px;
- margin: 10px auto 0 auto;
- }
- 
- @media (max-width: 600px) {
- #nes { width: 100%; height: auto; aspect-ratio: 4/3; }
- }
+ .key { background: linear-gradient(135deg, #2d3436, #1a1a2e); border: 1px solid #4ecdc4; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 12px; color: #4ecdc4; }
+ #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #888; max-width: 512px; margin: 10px auto 0 auto; }
+ @media (max-width: 600px) { #nes { width: 100%; height: auto; aspect-ratio: 4/3; } }
  </style>
 </head>
 <body>
  <h1>🎮 NES 游戏模拟器 v1.7</h1>
- 
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
  <label class="file-label" for="rom-file">📂 上传ROM</label>
  <input type="file" id="rom-file" class="file-input" accept=".nes,.NES">
  </div>
- 
  <div class="game-title" id="gameTitle">上传ROM文件开始游戏</div>
- 
  <div id="nes"></div>
- 
  <div id="log"></div>
- 
  <div class="controls">
  <h3>🎮 操作说明</h3>
  <div class="control-grid">
@@ -125,103 +51,70 @@
  var browser = null;
  var timerId = null;
 
- function log(msg) {
- document.getElementById('log').innerHTML = msg;
- console.log(msg);
- }
+ function log(msg) { document.getElementById('log').innerHTML = msg; console.log(msg); }
 
  function destroyOldGame() {
- if (browser) {
- try { browser.destroy(); } catch(e) {}
- browser = null;
- }
- if (timerId) {
- clearInterval(timerId);
- timerId = null;
- }
+ if (browser) { try { browser.destroy(); } catch(e) {} browser = null; }
+ if (timerId) { clearInterval(timerId); timerId = null; }
  document.getElementById('nes').innerHTML = '';
  }
 
- // NES是60fps，每帧约16.67ms
- function runGame() {
- if (!browser || !browser.isRunning) return;
- browser.frame();
- }
+ function runGame() { if (!browser || !browser.isRunning) return; browser.frame(); }
 
  function loadROM(romData) {
  try {
  destroyOldGame();
  log('加载ROM: ' + romData.length + ' bytes');
- 
  browser = new jsnes.Browser({
  container: document.getElementById('nes'),
  onError: function(e) { log('错误: ' + e); },
  onStatusUpdate: function(s) { log('状态: ' + s); }
  });
-
  browser.loadROM(romData);
  browser.start();
- // 用setInterval精确控制60fps
  timerId = setInterval(runGame, 1000/60);
  log('游戏运行中！(60fps)');
  document.getElementById('gameTitle').textContent = '游戏运行中 - 按键操作';
- } catch (err) {
- log('错误: ' + err.message);
- console.error(err);
- }
+ } catch (err) { log('错误: ' + err.message); console.error(err); }
  }
 
  // 键盘控制
  document.addEventListener('keydown', function(e) {
  if (!browser || !browser.nes) return;
- 
  var key = e.key.toLowerCase();
  var btn = null;
- 
- if (key === 'arrowup') btn = jsnes.Controller.BUTTON_UP;
- else if (key === 'arrowdown') btn = jsnes.Controller.BUTTON_DOWN;
- else if (key === 'arrowleft') btn = jsnes.Controller.BUTTON_LEFT;
- else if (key === 'arrowright') btn = jsnes.Controller.BUTTON_RIGHT;
- else if (key === 'z') btn = jsnes.Controller.BUTTON_A;
- else if (key === 'x') btn = jsnes.Controller.BUTTON_B;
- else if (key === 'enter') btn = jsnes.Controller.BUTTON_START;
- else if (key === 'shift') btn = jsnes.Controller.BUTTON_SELECT;
- 
- if (btn !== null) {
- browser.nes.controller[1][btn] = true;
- e.preventDefault();
- }
+ if (key === 'w') btn = jsnes.Controller.BUTTON_UP;
+ else if (key === 's') btn = jsnes.Controller.BUTTON_DOWN;
+ else if (key === 'a') btn = jsnes.Controller.BUTTON_LEFT;
+ else if (key === 'd') btn = jsnes.Controller.BUTTON_RIGHT;
+ else if (key === 'g') btn = jsnes.Controller.BUTTON_A;
+ else if (key === 'h') btn = jsnes.Controller.BUTTON_B;
+ else if (key === '1') btn = jsnes.Controller.BUTTON_START;
+ else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
+ if (btn !== null) { browser.nes.controller[1][btn] = true; e.preventDefault(); }
  });
 
  document.addEventListener('keyup', function(e) {
  if (!browser || !browser.nes) return;
- 
  var key = e.key.toLowerCase();
  var btn = null;
- 
- if (key === 'arrowup') btn = jsnes.Controller.BUTTON_UP;
- else if (key === 'arrowdown') btn = jsnes.Controller.BUTTON_DOWN;
- else if (key === 'arrowleft') btn = jsnes.Controller.BUTTON_LEFT;
- else if (key === 'arrowright') btn = jsnes.Controller.BUTTON_RIGHT;
- else if (key === 'z') btn = jsnes.Controller.BUTTON_A;
- else if (key === 'x') btn = jsnes.Controller.BUTTON_B;
- else if (key === 'enter') btn = jsnes.Controller.BUTTON_START;
- else if (key === 'shift') btn = jsnes.Controller.BUTTON_SELECT;
- 
- if (btn !== null) {
- browser.nes.controller[1][btn] = false;
- }
+ if (key === 'w') btn = jsnes.Controller.BUTTON_UP;
+ else if (key === 's') btn = jsnes.Controller.BUTTON_DOWN;
+ else if (key === 'a') btn = jsnes.Controller.BUTTON_LEFT;
+ else if (key === 'd') btn = jsnes.Controller.BUTTON_RIGHT;
+ else if (key === 'g') btn = jsnes.Controller.BUTTON_A;
+ else if (key === 'h') btn = jsnes.Controller.BUTTON_B;
+ else if (key === '1') btn = jsnes.Controller.BUTTON_START;
+ else if (key === '2') btn = jsnes.Controller.BUTTON_SELECT;
+ if (btn !== null) { browser.nes.controller[1][btn] = false; }
  });
 
- // 文件上传
  document.getElementById('rom-file').addEventListener('change', function(e) {
  var file = e.target.files[0];
  if (!file) return;
  log('读取: ' + file.name);
  var reader = new FileReader();
- reader.onload = function(ev) {
- loadROM(new Uint8Array(ev.target.result));
- };
+ reader.onload = function(ev) { loadROM(new Uint8Array(ev.target.result)); };
  reader.readAsArrayBuffer(file);
  });
 
