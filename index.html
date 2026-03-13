@@ -57,15 +57,8 @@
  transition: transform 0.2s;
  }
  .btn:hover { transform: scale(1.05); }
- .btn.active { 
- background: linear-gradient(135deg, #4ecdc4, #44a08d); 
- box-shadow: 0 0 15px rgba(78, 205, 196, 0.5);
- }
  
- .file-input {
- display: none;
- }
- 
+ .file-input { display: none; }
  .file-label {
  background: linear-gradient(135deg, #f093fb, #f5576c);
  display: inline-block;
@@ -84,6 +77,34 @@
  text-align: center;
  }
  
+ .controls {
+ background: rgba(255,255,255,0.05);
+ border: 1px solid rgba(255,255,255,0.1);
+ border-radius: 12px;
+ padding: 20px;
+ max-width: 512px;
+ margin: 20px auto;
+ }
+ .controls h3 {
+ margin: 0 0 15px 0;
+ color: #4ecdc4;
+ font-size: 16px;
+ }
+ .control-grid {
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ gap: 8px;
+ }
+ .key {
+ background: linear-gradient(135deg, #2d3436, #1a1a2e);
+ border: 1px solid #4ecdc4;
+ border-radius: 6px;
+ padding: 5px 10px;
+ font-family: monospace;
+ font-size: 12px;
+ color: #4ecdc4;
+ }
+ 
  #log {
  background: #0f0f23;
  padding: 8px 15px;
@@ -91,19 +112,13 @@
  font-family: monospace;
  font-size: 11px;
  border-radius: 8px;
- max-height: 60px;
- overflow-y: auto;
  color: #888;
  max-width: 512px;
  margin: 10px auto 0 auto;
  }
  
  @media (max-width: 600px) {
- #nes {
- width: 100%;
- height: auto;
- aspect-ratio: 512/480;
- }
+ #nes { width: 100%; height: auto; aspect-ratio: 512/480; }
  }
  </style>
 </head>
@@ -112,7 +127,7 @@
  
  <div class="game-container">
  <div class="game-selector">
- <button class="btn" onclick="resetGame()">🔄 重置</button>
+ <button class="btn" onclick="location.reload()">🔄 重置</button>
  <label class="file-label" for="rom-file">📂 上传ROM</label>
  <input type="file" id="rom-file" class="file-input" accept=".nes,.NES">
  </div>
@@ -122,15 +137,24 @@
  <div id="nes"></div>
  
  <div id="log"></div>
+ 
+ <div class="controls" id="controls">
+ <h3>🎮 操作说明</h3>
+ <div class="control-grid">
+ <div><span class="key">↑↓←→</span> 方向键</div>
+ <div><span class="key">Z</span> A按钮</div>
+ <div><span class="key">X</span> B按钮</div>
+ <div><span class="key">Enter</span> 开始</div>
+ </div>
+ </div>
  </div>
 
  <script>
  var browser = null;
+ var animationId = null;
 
  function log(msg) {
- var div = document.getElementById('log');
- div.innerHTML = msg + ' ';
- div.scrollTop = div.scrollHeight;
+ document.getElementById('log').innerHTML = msg;
  console.log(msg);
  }
 
@@ -139,12 +163,19 @@
  try { browser.destroy(); } catch(e) {}
  browser = null;
  }
+ if (animationId) {
+ cancelAnimationFrame(animationId);
+ animationId = null;
+ }
  document.getElementById('nes').innerHTML = '';
  }
 
- function resetGame() {
- destroyOldGame();
- log('已重置，请上传ROM');
+ function runGame() {
+ if (!browser) return;
+ if (browser.isRunning) {
+ browser.frame();
+ }
+ animationId = requestAnimationFrame(runGame);
  }
 
  function loadROM(romData) {
@@ -159,7 +190,9 @@
  });
 
  browser.loadROM(romData);
- log('游戏启动成功!');
+ browser.start();
+ runGame();
+ log('游戏运行中！');
  document.getElementById('gameTitle').textContent = '游戏运行中 - 按键操作';
  } catch (err) {
  log('错误: ' + err.message);
@@ -167,22 +200,19 @@
  }
  }
 
- // 文件上传处理
+ // 文件上传
  document.getElementById('rom-file').addEventListener('change', function(e) {
  var file = e.target.files[0];
  if (!file) return;
- 
- log('读取文件: ' + file.name);
- 
+ log('读取: ' + file.name);
  var reader = new FileReader();
  reader.onload = function(ev) {
- var romData = new Uint8Array(ev.target.result);
- loadROM(romData);
+ loadROM(new Uint8Array(ev.target.result));
  };
  reader.readAsArrayBuffer(file);
  });
 
- log('jsNES v2 已加载，请上传ROM文件');
+ log('jsNES v2 已加载，上传ROM开始游戏');
  </script>
 </body>
 </html>
