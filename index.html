@@ -29,7 +29,6 @@
  height: 384px;
  margin: 0 auto;
  display: block;
- image-rendering: pixelated;
  }
  
  .btn {
@@ -123,7 +122,6 @@
 
  <script>
  var browser = null;
- var animationId = null;
 
  function log(msg) {
  document.getElementById('log').innerHTML = msg;
@@ -135,19 +133,13 @@
  try { browser.destroy(); } catch(e) {}
  browser = null;
  }
- if (animationId) {
- cancelAnimationFrame(animationId);
- animationId = null;
- }
  document.getElementById('nes').innerHTML = '';
  }
 
  function runGame() {
- if (!browser) return;
- if (browser.isRunning) {
+ if (!browser || !browser.isRunning) return;
  browser.frame();
- }
- animationId = requestAnimationFrame(runGame);
+ requestAnimationFrame(runGame);
  }
 
  function loadROM(romData) {
@@ -172,9 +164,9 @@
  }
  }
 
- // 键盘控制
+ // 键盘控制 - 和呀哈哈源码一样
  document.addEventListener('keydown', function(e) {
- if (!browser) return;
+ if (!browser || !browser.nes) return;
  
  var key = e.key.toLowerCase();
  var btn = null;
@@ -195,7 +187,7 @@
  });
 
  document.addEventListener('keyup', function(e) {
- if (!browser) return;
+ if (!browser || !browser.nes) return;
  
  var key = e.key.toLowerCase();
  var btn = null;
