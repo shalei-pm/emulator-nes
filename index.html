@@ -6,70 +6,20 @@
     <title>网页版NES模拟器</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        html, body { 
+            height: 100%;
             font-family: 'Inter', -apple-system, sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 20px; 
-            color: #fff; 
+            background: #000; 
         }
-        h1 { margin-bottom: 20px; color: #4ade80; font-size: 24px; }
-        
-        .controls { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        button { padding: 10px 20px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; background: #3b3b5c; color: #fff; }
-        button:hover { background: #4ade80; color: #1a1a2e; }
-        
-        #game-container {
-            width: 100%;
-            max-width: 800px;
-            aspect-ratio: 4/3;
-            background: #000;
-            border: 4px solid #4ade80;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        #game-container iframe {
+        iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
-        
-        .tips { margin-top: 20px; padding: 20px; background: rgba(42, 42, 74, 0.8); border-radius: 8px; max-width: 800px; font-size: 13px; line-height: 1.8; }
-        .tips h3 { color: #4ade80; margin-bottom: 12px; }
     </style>
 </head>
 <body>
-    <h1>🎮 网页版NES模拟器</h1>
-    
-    <div class="controls">
-        <button onclick="loadGame('')">超级玛丽</button>
-    </div>
-    
-    <div id="game-container">
-        <iframe id="game-frame" src="about:blank" allow="autoplay; fullscreen; gamepad"></iframe>
-    </div>
-    
-    <div class="tips">
-        <h3>说明</h3>
-        <p>点击上方按钮开始游戏</p>
-    </div>
-
-    <script>
-        const gameFrame = document.getElementById('game-frame');
-        
-        function loadGame(rom) {
-            // 使用 emulatorjs.org 的嵌入式模拟器
-            // 需要找可用的ROM URL
-            // 现在先用简单的方式
-            gameFrame.src = 'https://emulatorjs.org/embed/nes';
-        }
-        
-        // 加载默认游戏
-        loadGame('');
-    </script>
+    <!-- 直接嵌入 emulatorjs -->
+    <iframe src="https://emulatorjs.org/nes" allow="autoplay; fullscreen; gamepad"></iframe>
 </body>
 </html>
