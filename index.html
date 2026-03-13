@@ -1,70 +1,224 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网页版NES模拟器</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            padding: 20px; 
-            color: #fff; 
-        }
-        h1 { margin-bottom: 30px; color: #4ade80; font-size: 28px; }
-        
-        .card {
-            background: rgba(255,255,255,0.1);
-            padding: 40px;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 400px;
-        }
-        
-        .card h2 { margin-bottom: 20px; font-size: 20px; }
-        
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            margin: 10px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            background: #4ade80;
-            color: #1a1a2e;
-            font-weight: bold;
-        }
-        
-        .btn:hover { transform: scale(1.05); }
-        
-        .tips { margin-top: 30px; font-size: 14px; color: #aaa; }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>NES 游戏模拟器</title>
+ <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
+ <style>
+ body { 
+ background: linear-gradient(135deg, #1a1a2e, #16213e); 
+ color: #fff; 
+ font-family: 'Noto Sans SC', sans-serif;
+ min-height: 100vh;
+ margin: 0;
+ padding: 20px;
+ }
+ 
+ h1 {
+ text-align: center;
+ margin-bottom: 20px;
+ font-size: 28px;
+ }
+ 
+ .game-container {
+ max-width: 600px;
+ margin: 0 auto;
+ }
+ 
+ .game-selector { 
+ text-align: center; 
+ margin-bottom: 15px; 
+ display: flex;
+ flex-wrap: wrap;
+ justify-content: center;
+ gap: 10px;
+ }
+ 
+ #nes { 
+ background: #000; 
+ border: 4px solid #4ecdc4;
+ border-radius: 8px;
+ width: 512px;
+ height: 480px;
+ margin: 0 auto;
+ display: block;
+ }
+ 
+ .btn {
+ background: linear-gradient(135deg, #667eea, #764ba2);
+ color: white;
+ border: none;
+ padding: 12px 20px;
+ margin: 5px;
+ font-size: 14px;
+ cursor: pointer;
+ border-radius: 8px;
+ transition: transform 0.2s;
+ }
+ .btn:hover { transform: scale(1.05); }
+ .btn.active { 
+ background: linear-gradient(135deg, #4ecdc4, #44a08d); 
+ box-shadow: 0 0 15px rgba(78, 205, 196, 0.5);
+ }
+ .btn:disabled {
+ opacity: 0.5;
+ cursor: not-allowed;
+ }
+ 
+ .game-title { 
+ font-size: 20px; 
+ margin: 15px 0;
+ color: #ffe66d;
+ text-align: center;
+ }
+ 
+ .controls {
+ background: rgba(255,255,255,0.05);
+ border: 1px solid rgba(255,255,255,0.1);
+ border-radius: 12px;
+ padding: 20px;
+ max-width: 512px;
+ margin: 20px auto 0 auto;
+ display: none;
+ }
+ .controls.show { display: block; }
+ .controls h3 {
+ margin: 0 0 15px 0;
+ color: #4ecdc4;
+ font-size: 16px;
+ text-align: center;
+ }
+ .control-grid {
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ gap: 8px;
+ }
+ .control-item {
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ }
+ .key {
+ background: linear-gradient(135deg, #2d3436, #1a1a2e);
+ border: 1px solid #4ecdc4;
+ border-radius: 6px;
+ padding: 5px 10px;
+ font-family: monospace;
+ font-size: 12px;
+ color: #4ecdc4;
+ min-width: 45px;
+ text-align: center;
+ }
+ .control-item span:last-child {
+ color: rgba(255,255,255,0.7);
+ font-size: 13px;
+ }
+ 
+ #log {
+ background: #0f0f23;
+ padding: 8px 15px;
+ margin-top: 10px;
+ font-family: monospace;
+ font-size: 11px;
+ border-radius: 8px;
+ max-height: 60px;
+ overflow-y: auto;
+ color: #888;
+ max-width: 512px;
+ margin: 10px auto 0 auto;
+ }
+ 
+ @media (max-width: 600px) {
+ #nes {
+ width: 100%;
+ height: auto;
+ aspect-ratio: 512/480;
+ }
+ }
+ </style>
 </head>
 <body>
-    <h1>🎮 NES模拟器</h1>
-    
-    <div class="card">
-        <h2>选择入口</h2>
-        
-        <a href="https://emulatorjs.org/nes" target="_blank" class="btn">
-            🌐 在线模拟器
-        </a>
-        
-        <a href="upload.html" class="btn">
-            📂 上传ROM
-        </a>
-        
-        <div class="tips">
-            <p>点击"在线模拟器"可直接游玩</p>
-        </div>
-    </div>
+ <h1>🎮 NES 游戏模拟器</h1>
+ 
+ <div class="game-container">
+ <div class="game-selector">
+ <button class="btn active" id="btn-contra" onclick="loadGame('contra')">🎯 魂斗罗</button>
+ </div>
+ 
+ <div class="game-title" id="gameTitle">点击"魂斗罗"开始游戏</div>
+ 
+ <div id="nes"></div>
+ 
+ <div id="log"></div>
+ 
+ <div class="controls show" id="controls-contra">
+ <h3>🎯 魂斗罗 - 操作说明</h3>
+ <div class="control-grid">
+ <div class="control-item"><span class="key">← →</span><span>左右移动</span></div>
+ <div class="control-item"><span class="key">↑</span><span>向上移动</span></div>
+ <div class="control-item"><span class="key">↓</span><span>下蹲</span></div>
+ <div class="control-item"><span class="key">Z</span><span>射击</span></div>
+ <div class="control-item"><span class="key">X</span><span>跳跃</span></div>
+ <div class="control-item"><span class="key">Enter</span><span>开始游戏</span></div>
+ </div>
+ </div>
+ </div>
+
+ <script>
+ var browser = null;
+ var currentGame = null;
+
+ var games = {
+ contra: { name: '🎯 魂斗罗', title: '魂斗罗', file: 'contra.nes', controlsId: 'controls-contra' }
+ };
+
+ function log(msg, type) {
+ var div = document.getElementById('log');
+ div.innerHTML += msg + ' ';
+ div.scrollTop = div.scrollHeight;
+ console.log(msg);
+ }
+
+ function destroyOldGame() {
+ if (browser) {
+ try { browser.destroy(); } catch(e) {}
+ browser = null;
+ }
+ document.getElementById('nes').innerHTML = '';
+ }
+
+ function loadGame(gameName) {
+ var game = games[gameName];
+ if (!game || !game.file) {
+ log('游戏暂不可用', 'info');
+ return;
+ }
+ 
+ try {
+ destroyOldGame();
+ currentGame = gameName;
+ log('开始加载 ' + game.title + '...', 'info');
+ 
+ browser = new jsnes.Browser({
+ container: document.getElementById('nes'),
+ onError: function(e) { log('错误: ' + e, 'error'); },
+ onStatusUpdate: function(s) { log('状态: ' + s, 'info'); }
+ });
+
+ jsnes.Browser.loadROMFromURL(game.file, function(err, romData) {
+ if (err) { log('加载错误: ' + err, 'error'); return; }
+ log('ROM: ' + romData.length + ' bytes', 'success');
+ browser.loadROM(romData);
+ log('游戏启动成功!', 'success');
+ });
+ } catch (err) {
+ log('错误: ' + err.message, 'error');
+ console.error(err);
+ }
+ }
+
+ log('jsNES v2 已加载', 'success');
+ </script>
 </body>
 </html>
