@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.6</title>
+ <title>NES 游戏模拟器 v3.7</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -20,12 +20,12 @@
  .controls h3 { margin: 0 0 15px 0; color: #4ecdc4; font-size: 16px; }
  .control-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
  .key { background: linear-gradient(135deg, #2d3436, #1a1a2e); border: 1px solid #4ecdc4; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 12px; color: #4ecdc4; }
- #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #888; max-width: 512px; margin: 10px auto 0 auto; }
+ #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #0f0; max-width: 512px; margin: 10px auto 0 auto; height: 100px; overflow-y: auto; white-space: pre-wrap; }
  @media (max-width: 600px) { #game-container { width: 100%; height: auto; aspect-ratio: 4/3; } }
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.6</h1>
+ <h1>🎮 NES 游戏模拟器 v3.7</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -51,10 +51,16 @@
  var nes = null;
  var canvas = null;
  var ctx = null;
+ var logLines = [];
+ var frameCount = 0;
 
  function log(msg) { 
-  document.getElementById('log').innerHTML = msg; 
-  console.log('[NES]', msg); 
+  var time = new Date().toLocaleTimeString();
+  logLines.push('[' + time + '] ' + msg);
+  if (logLines.length > 50) logLines.shift();
+  document.getElementById('log').textContent = logLines.join('\n');
+  document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+  console.log('[NES]', msg);
  }
 
  function initCanvas() {
@@ -71,6 +77,10 @@
  function gameLoop() {
   if (nes) {
    nes.frame();
+   frameCount++;
+   if (frameCount % 60 === 0) {
+    log('运行中... frame=' + frameCount);
+   }
   }
   requestAnimationFrame(gameLoop);
  }
@@ -99,7 +109,8 @@
 
    nes.loadROM(romData);
    
-   console.log('controllers:', nes.controllers);
+   log('loaded! controllers=' + (nes.controllers ? 'yes' : 'no'));
+   log('keys: ' + Object.keys(nes).join(', '));
    
    gameLoop();
    
@@ -111,16 +122,9 @@
   }
  }
 
- // 键盘 - 用 buttonDown/buttonUp 方法
  var keyMap = {
-  'g': 'A',
-  'h': 'B', 
-  '2': 'SELECT',
-  '1': 'START',
-  'w': 'UP',
-  's': 'DOWN',
-  'a': 'LEFT',
-  'd': 'RIGHT'
+  'g': 'A', 'h': 'B', '2': 'SELECT', '1': 'START',
+  'w': 'UP', 's': 'DOWN', 'a': 'LEFT', 'd': 'RIGHT'
  };
 
  document.addEventListener('keydown', function(e) {
@@ -129,7 +133,7 @@
   if (btn) {
    nes.buttonDown(1, btn);
    e.preventDefault();
-   console.log('按下:', btn);
+   log('按下: ' + btn);
   }
  });
 
