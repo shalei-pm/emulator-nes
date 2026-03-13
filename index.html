@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>NES 游戏模拟器 v3.2</title>
+ <title>NES 游戏模拟器 v3.3</title>
  <script src="https://unpkg.com/jsnes@1/dist/jsnes.min.js"></script>
  <style>
  body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
@@ -25,7 +25,7 @@
  </style>
 </head>
 <body>
- <h1>🎮 NES 游戏模拟器 v3.2</h1>
+ <h1>🎮 NES 游戏模拟器 v3.3</h1>
  <div class="game-container">
  <div class="game-selector">
  <button class="btn" onclick="location.reload()">🔄 重置</button>
@@ -68,14 +68,10 @@
  try {
   destroyOldGame();
   
-  // 检测ROM格式
   var header = new Uint8Array(buffer, 0, 16);
   var headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' ');
-  console.log('ROM header:', headerHex);
-  
-  // 检测是否为 iNES 格式
   var isValid = (header[0] === 0x4E && header[1] === 0x45 && header[2] === 0x53 && header[3] === 0x1A);
-  log('ROM header: ' + headerHex + (isValid ? ' (有效iNES)' : ' (无效)'));
+  log('ROM: ' + headerHex + (isValid ? ' ✓' : ' ✗'));
   
   nes = new jsnes.NES({
    width: 512,
@@ -83,7 +79,6 @@
    container: document.getElementById('nes')
   });
 
-  // 尝试用字符串方式加载
   var uint8 = new Uint8Array(buffer);
   var binary = '';
   for (var i = 0; i < uint8.length; i++) {
@@ -91,41 +86,25 @@
   }
   
   nes.loadROM(binary);
-  console.log('ROM loaded, isRunning:', nes.isRunning);
+  
+  // 尝试启动
+  console.log('nes.start:', typeof nes.start);
+  if (typeof nes.start === 'function') {
+   nes.start();
+  }
+  
+  console.log('isRunning:', nes.isRunning);
+  console.log('controller:', nes.controller);
   
   timerId = setInterval(runFrame, 1000 / 60);
   
-  log('运行中！按键: W/S/A/D/G/H/1/2 - 按G测试');
-  document.getElementById('gameTitle').textContent = '游戏中 - 请按G测试';
+  log('运行中！按G测试');
+  document.getElementById('gameTitle').textContent = '游戏中 - 按G测试';
  } catch (err) { log('错误: ' + err.message); console.error(err); }
  }
 
- // 键盘控制 - 直接设置 buttonState 数组
+ // 键盘 - buttonState 数组
  document.addEventListener('keydown', function(e) {
- if (!nes || !nes.isRunning) return;
- 
- var key = e.key.toLowerCase();
- console.log('按键:', key);
- 
- // 按钮索引: 0=A, 1=B, 2=Select, 3=Start, 4=Up, 5=Down, 6=Left, 7=Right
- var idx = null;
- if (key === 'g') idx = 0;      // A
- else if (key === 'h') idx = 1; // B
- else if (key === '2') idx = 2; // Select
- else if (key === '1') idx = 3; // Start
- else if (key === 'w') idx = 4; // Up
- else if (key === 's') idx = 5; // Down
- else if (key === 'a') idx = 6; // Left
- else if (key === 'd') idx = 7; // Right
- 
- if (idx !== null) {
-  nes.controller[1].buttonState[idx] = true;
-  e.preventDefault();
-  log('按下: ' + key + ' (idx=' + idx + ')');
- }
- });
-
- document.addEventListener('keyup', function(e) {
  if (!nes || !nes.isRunning) return;
  
  var key = e.key.toLowerCase();
@@ -140,8 +119,25 @@
  else if (key === 'd') idx = 7;
  
  if (idx !== null) {
-  nes.controller[1].buttonState[idx] = false;
+  nes.controller[1].buttonState[idx] = true;
+  e.preventDefault();
+  console.log('按下:', key, 'idx=', idx, 'state=', nes.controller[1].buttonState);
  }
+ });
+
+ document.addEventListener('keyup', function(e) {
+ if (!nes || !nes.isRunning) return;
+ var key = e.key.toLowerCase();
+ var idx = null;
+ if (key === 'g') idx = 0;
+ else if (key === 'h') idx = 1;
+ else if (key === '2') idx = 2;
+ else if (key === '1') idx = 3;
+ else if (key === 'w') idx = 4;
+ else if (key === 's') idx = 5;
+ else if (key === 'a') idx = 6;
+ else if (key === 'd') idx = 7;
+ if (idx !== null) nes.controller[1].buttonState[idx] = false;
  });
 
  document.getElementById('rom-file').addEventListener('change', function(e) {
@@ -153,7 +149,7 @@
  reader.readAsArrayBuffer(file);
  });
 
- log('jsNES v1 已加载，上传ROM开始游戏');
+ log('jsNES v1 - 上传ROM开始');
  </script>
 </body>
 </html>
