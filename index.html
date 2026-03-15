@@ -73,12 +73,32 @@
  }
 
  var frameCount = 0;
+ var turboKeys = { 'g': false, 'h': false }; // 记录连发键状态
+ 
  function gameLoop() {
   if (nes) {
-   // 检测连发：每5帧触发一次按住状态
-   if (frameCount % 5 === 0) {
-    if (holdingKeys['g']) nes.buttonDown(1, 'A');
-    if (holdingKeys['h']) nes.buttonDown(1, 'B');
+   // 连发逻辑：每3帧触发一次（更快的连发速度）
+   if (frameCount % 3 === 0) {
+    // A键连发
+    if (holdingKeys['g']) {
+     if (turboKeys['g']) {
+      nes.buttonUp(1, 'A');
+      turboKeys['g'] = false;
+     } else {
+      nes.buttonDown(1, 'A');
+      turboKeys['g'] = true;
+     }
+    }
+    // B键连发
+    if (holdingKeys['h']) {
+     if (turboKeys['h']) {
+      nes.buttonUp(1, 'B');
+      turboKeys['h'] = false;
+     } else {
+      nes.buttonDown(1, 'B');
+      turboKeys['h'] = true;
+     }
+    }
    }
    
    nes.frame();
