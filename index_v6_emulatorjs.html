@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>NES 游戏模拟器 v6.0 (EmulatorJS)</title>
+ <style>
+ body { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; margin: 0; padding: 20px; }
+ h1 { text-align: center; margin-bottom: 20px; font-size: 28px; }
+ .game-container { max-width: 600px; margin: 0 auto; }
+ .game-selector { text-align: center; margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+ #game-container { background: #000; border: 4px solid #4ecdc4; border-radius: 8px; width: 512px; height: 480px; margin: 0 auto; position: relative; }
+ .btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 20px; margin: 5px; font-size: 14px; cursor: pointer; border-radius: 8px; }
+ .btn:hover { transform: scale(1.05); }
+ .file-input { display: none; }
+ .file-label { background: linear-gradient(135deg, #f093fb, #f5576c); display: inline-block; padding: 12px 20px; margin: 5px; font-size: 14px; border-radius: 8px; cursor: pointer; }
+ .game-title { font-size: 20px; margin: 15px 0; color: #ffe66d; text-align: center; }
+ .controls { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; max-width: 512px; margin: 20px auto; }
+ .controls h3 { margin: 0 0 15px 0; color: #4ecdc4; font-size: 16px; }
+ .control-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+ .key { background: linear-gradient(135deg, #2d3436, #1a1a2e); border: 1px solid #4ecdc4; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 12px; color: #4ecdc4; }
+ .turbo { color: #ffe66d; font-size: 12px; margin-top: 10px; text-align: center; }
+ #log { background: #0f0f23; padding: 8px 15px; margin-top: 10px; font-family: monospace; font-size: 11px; border-radius: 8px; color: #0f0; max-width: 512px; margin: 10px auto 0 auto; height: 60px; overflow-y: auto; white-space: pre-wrap; }
+ @media (max-width: 600px) { #game-container { width: 100%; height: auto; aspect-ratio: 4/3; } }
+ </style>
+</head>
+<body>
+ <h1>🎮 NES 游戏模拟器 v6.0 (EmulatorJS)</h1>
+ <div class="game-container">
+ <div class="game-selector">
+ <button class="btn" onclick="location.reload()">🔄 重置</button>
+ <label class="file-label" for="rom-file">📂 上传ROM</label>
+ <input type="file" id="rom-file" class="file-input" accept=".nes,.NES">
+ </div>
+ <div class="game-title" id="gameTitle">上传ROM文件开始游戏</div>
+ <div id="game-container"></div>
+ <div id="log"></div>
+ <div class="controls">
+ <h3>🎮 操作说明</h3>
+ <div class="control-grid">
+ <div><span class="key">W/S/A/D</span> 上下左右</div>
+ <div><span class="key">G</span> A</div>
+ <div><span class="key">H</span> B</div>
+ <div><span class="key">1</span> 开始</div>
+ <div><span class="key">2</span> Select</div>
+ </div>
+ <div class="turbo">⚡ EmulatorJS 版本 - 支持更多Mapper</div>
+ </div>
+ </div>
+
+ <!-- EmulatorJS 配置 -->
+ <script>
+ const EJS_pathToData = 'https://cdn.emulatorjs.org/stable/data/';
+ const EJS_core = 'fceumm'; // NES 核心
+ const EJS_gameUrl = ''; // 将在选择 ROM 后设置
+ const EJS_language = 'zh-CN';
+ const EJS_volume = 1;
+ const EJS_savestate = 'disable';
+ const EJS cheat = 'disable';
+ const EJS_gamePatch = [];
+ const EJS_defaultOptions = {
+   'core': EJS_core,
+   'gameUrl': EJS_gameUrl,
+   'language': EJS_language,
+   'volume': EJS_volume,
+   'savestate': EJS_savestate,
+   'cheat': cheat,
+   'gamePatch': EJS_gamePatch,
+   'showFps': true,
+   'showGameNotes': false,
+   'addNewKey': [],
+   '控制系统: {
+     'shift': false,
+     'saveStateKey': 'F5',
+     'loadStateKey': 'F7',
+     'fullScreenKey': 'F11',
+     'mute': 'M',
+     'scanlines': 'S',
+     'fps': 'F'
+   }
+ };
+ </script>
+ <script src="https://cdn.emulatorjs.org/stable/loader.js"></script>
+
+ <script>
+ var logLines = [];
+ var emulator = null;
+
+ function log(msg) { 
+  logLines.push(msg);
+  if (logLines.length > 20) logLines.shift();
+  document.getElementById('log').textContent = logLines.join('\n');
+ }
+
+ // 等待 EmulatorJS 初始化
+ window.addEventListener('load', function() {
+  log('EmulatorJS v6.0 已加载');
+  log('核心: fceumm (支持更多NES mapper)');
+ });
+
+ // 处理 ROM 文件选择
+ document.getElementById('rom-file').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  
+  log('读取: ' + file.name);
+  
+  // 创建对象 URL
+  var romUrl = URL.createObjectURL(file);
+  
+  document.getElementById('gameTitle').textContent = file.name;
+  
+  // 加载 ROM
+  if (window.EJS) {
+   log('加载ROM: ' + file.name);
+   
+   // 销毁旧实例
+   if (emulator) {
+    try { emulator.destroy(); } catch(e) {}
+   }
+   
+   // 创建新实例
+   try {
+    emulator = new EJS({
+     element: document.getElementById('game-container'),
+     core: 'fceumm',
+     gameUrl: romUrl,
+     language: 'zh-CN',
+     volume: 1,
+     onGameStart: function() {
+      log('游戏开始!');
+     },
+     onError: function(err) {
+      log('错误: ' + err);
+     }
+    });
+    log('EmulatorJS 初始化成功');
+   } catch(err) {
+    log('初始化失败: ' + err.message);
+   }
+  } else {
+   log('EmulatorJS 未加载，等待重试...');
+   setTimeout(function() {
+    location.reload();
+   }, 2000);
+  }
+ });
+ </script>
+</body>
+</html>
