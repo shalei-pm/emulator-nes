@@ -105,6 +105,33 @@ document.addEventListener('keyup', function(e) {
 
 ---
 
+## v6.0 - EmulatorJS 版本（测试中）
+
+### 版本说明
+- **文件**：`index_v6_emulatorjs.html`
+- **核心**：EmulatorJS (fceumm 核心)
+- **优势**：支持更多 NES Mapper，兼容性好
+- **状态**：待测试
+
+### 使用方式
+1. 打开 index_v6_emulatorjs.html
+2. 上传 ROM 文件
+3. 使用默认按键或自定义
+
+### 按键配置
+- W/S/A/D: 上下左右
+- G: A
+- H: B
+- 1: Start
+- 2: Select
+- EmulatorJS 默认也支持游戏手柄
+
+### 参考
+- EmulatorJS 官网: https://emulatorjs.org/
+- CDN: https://cdn.emulatorjs.org/stable/
+
+---
+
 ## 待验证
 - [ ] 连发功能是否正常工作
 - [ ] 不同频率（2帧 vs 3帧）的效果对比
